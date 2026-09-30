@@ -1,0 +1,31 @@
+{
+  "_note": "사주 결과 리포트의 섹션 정의. 실제 해석 문구는 report.js가 오행 분포·집중분야에 따라 생성한다. focus 값은 입력의 집중분야 id와 매칭되어 우선순위/강조에 사용된다.",
+  "focusOptions": [
+    { "id": "personality", "label": "기본 성격" },
+    { "id": "relationship", "label": "인간관계" },
+    { "id": "love", "label": "연애" },
+    { "id": "marriage", "label": "결혼" },
+    { "id": "money", "label": "재물" },
+    { "id": "career", "label": "직업" },
+    { "id": "timeline", "label": "가까운 시기의 흐름" },
+    { "id": "habits", "label": "개선해야 할 습관" }
+  ],
+  "sections": [
+    { "id": "personality", "title": "기본 성격 구조", "sub": "겉모습·내면·차이·스트레스 반응", "icon": "compass", "focus": "personality", "always": true },
+    { "id": "relationship", "title": "인간관계 패턴", "sub": "반복되는 문제와 그 원인", "icon": "users", "focus": "relationship" },
+    { "id": "love", "title": "연애 스타일", "sub": "시작·표현·불안·궁합", "icon": "heart", "focus": "love" },
+    { "id": "marriage", "title": "결혼과 현실적인 갈등", "sub": "생활·돈·역할·조율", "icon": "users", "focus": "marriage" },
+    { "id": "money", "title": "돈 버는 방식과 재물 성향", "sub": "축적 유형·습관·수입 구조", "icon": "coins", "focus": "money" },
+    { "id": "career", "title": "사회생활과 직업", "sub": "인정받는 방식·맞는 환경", "icon": "briefcase", "focus": "career" },
+    { "id": "timeline", "title": "가까운 시기의 흐름", "sub": "앞으로 3년의 가능성", "icon": "clock", "focus": "timeline" },
+    { "id": "habits", "title": "개선해야 할 습관 3가지", "sub": "원인·사례·행동·주간 과제", "icon": "lightbulb", "focus": "habits", "always": true },
+    { "id": "loveflow", "title": "연애운 및 결혼 흐름", "sub": "성향·흐름·상대·조건", "icon": "heart", "focus": "love" }
+  ],
+  "elements": {
+    "wood":  { "label": "목(木)", "keyword": "성장·확장", "hex": "#6f9e7f" },
+    "fire":  { "label": "화(火)", "keyword": "표현·열정", "hex": "#c07a3e" },
+    "earth": { "label": "토(土)", "keyword": "안정·중재", "hex": "#c8a45c" },
+    "metal": { "label": "금(金)", "keyword": "원칙·결단", "hex": "#aeb8cc" },
+    "water": { "label": "수(水)", "keyword": "사고·유연", "hex": "#6d84c0" }
+  }
+}

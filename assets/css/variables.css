@@ -1,0 +1,82 @@
+/* =========================================================
+   Design tokens — 일몰·석양 파스텔 핑크 테마 (밝은 톤, 버튼도 톤온톤) (해 질 녘 하늘: 위는 보랏빛, 아래로 갈수록 로즈·코랄·피치)
+   모든 색상·간격·타이포는 CSS 변수로 관리합니다.
+   ========================================================= */
+:root {
+  /* ---- Color: 배경 (따뜻한 모브) — 피치빛 파스텔 오로라와 톤온톤 ---- */
+  --c-bg: #6e4d74;
+  --c-bg-deep: #5e4064;
+  --c-bg-elev: #7a4f74;          /* 카드/패널 배경(노을빛 플럼) */
+  --c-bg-elev-2: #8a5a80;
+  --c-ivory: #f4ecd8;            /* 아이보리 카드 배경(타로) */
+  --c-ivory-ink: #2a2418;        /* 아이보리 위 본문 */
+
+  /* ---- Color: 텍스트 (웜 파스텔 화이트) ---- */
+  --c-text: #f6eef1;            /* 본문(따뜻한 회백색) */
+  --c-text-soft: #f6dde3;      /* 보조 텍스트(연한 로즈그레이) */
+  --c-text-faint: #e0bcc8;
+
+  /* ---- Color: 강조 (로즈골드 — 로즈→피치 메탈릭) ---- */
+  --c-gold: #ffc3d1;            /* 석양 로즈 베이스 */
+  --c-gold-soft: #ffd9c2;       /* 하이라이트(노을 피치) */
+  --c-gold-line: rgba(255, 205, 218, 0.62);
+  --c-gold-glow: rgba(255, 205, 218, 0.22);
+
+  /* ---- Color: 의미색 (파스텔로 조율) ---- */
+  --c-warn: #ffd6a8;            /* 주의(파스텔 앰버) */
+  --c-warn-bg: rgba(226, 176, 126, 0.14);
+  --c-danger: #e2919a;          /* 위험(파스텔 로즈레드) */
+  --c-danger-bg: rgba(226, 145, 154, 0.14);
+  --c-good: #c2f2d8;            /* 장점/긍정(파스텔 민트) */
+  --c-good-bg: rgba(159, 211, 183, 0.14);
+  --c-action: #ffd0f0;          /* 행동 제안(파스텔 로즈-라벤더) */
+  --c-action-bg: rgba(207, 158, 198, 0.16);
+
+  /* ---- Surface & line ---- */
+  --c-line: rgba(255, 238, 244, 0.20);
+  --c-line-strong: rgba(255, 238, 244, 0.30);
+  --c-focus: #ffd9c2;
+
+  /* ---- Typography ---- */
+  --font-serif: "Nanum Myeongjo", "Noto Serif KR", "Apple SD Gothic Neo",
+    "Batang", Georgia, "Times New Roman", serif;
+  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic",
+    "Segoe UI", Roboto, "Helvetica Neue", system-ui, sans-serif;
+
+  --fs-hero: clamp(1.8rem, 6vw, 2.6rem);
+  --fs-h1: clamp(1.5rem, 5vw, 2.05rem);
+  --fs-h2: clamp(1.25rem, 4vw, 1.55rem);
+  --fs-h3: 1.12rem;
+  --fs-body: 1rem;              /* 16px 최소 유지 */
+  --fs-sm: 0.9rem;
+  --fs-xs: 0.8rem;
+  --lh-body: 1.72;
+
+  /* ---- Spacing ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* ---- Radius / shadow ---- */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --shadow-card: 0 2px 6px -2px rgba(70,30,60,0.25), 0 22px 48px -28px rgba(70, 30, 60, 0.55);
+  --shadow-float: 0 4px 10px -3px rgba(70,30,60,0.3), 0 30px 70px -24px rgba(70, 30, 60, 0.55);
+
+  /* ---- Layout ---- */
+  --wrap: 720px;               /* 본문 최대 폭 (가독성) */
+  --wrap-wide: 1040px;
+  --touch: 44px;               /* 최소 터치 영역 */
+  --header-h: 56px;
+
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* 시스템 폰트로도 레이아웃이 무너지지 않도록 fallback을 명시적으로 둡니다. */

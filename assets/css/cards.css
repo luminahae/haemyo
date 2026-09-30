@@ -1,0 +1,162 @@
+/* =========================================================
+   Tarot cards — 뒷면 부채꼴, 미세 기울기, 뒤집기, 확대
+   과도한 3D/번쩍임 없이 부드럽고 고급스럽게.
+   ========================================================= */
+
+:root {
+  --card-w: 148px;
+  --card-h: 252px;
+  --card-radius: 14px;
+}
+@media (min-width: 720px) { :root { --card-w: 172px; --card-h: 292px; } }
+
+/* ---- 카드 뒤집기 컨테이너 ---- */
+.tcard {
+  position: relative;
+  width: var(--card-w); height: var(--card-h);
+  border-radius: var(--card-radius);
+  perspective: 1100px;
+  background: transparent; border: 0; padding: 0;
+  transition: transform 0.28s var(--ease), filter 0.28s var(--ease);
+  will-change: transform;
+}
+.tcard:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 4px; }
+.tcard .tcard-inner {
+  position: absolute; inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.7s var(--ease);
+  border-radius: var(--card-radius);
+}
+.tcard.is-flipped .tcard-inner { transform: rotateY(180deg); }
+
+.tcard-face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-card), 0 0 0 1px rgba(0,0,0,0.4);
+}
+.tcard-face svg { width: 100%; height: 100%; }
+.tcard-front { transform: rotateY(180deg); background: var(--c-ivory); }
+.tcard-back { background: #322641; }
+
+/* 실제 RWS 카드 이미지 */
+.tcard-img { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; }
+
+/* 마이너 아르카나 — 슈트별 이미지 시트(14장) */
+.tcard-sprite { background-repeat: no-repeat; background-size: 1400% 100%; background-color: var(--c-ivory); }
+.tcard.is-reversed .tcard-front .tcard-sprite { transform: rotate(180deg); }
+
+/* 덱 선택 · 배열 묶음 */
+.deck-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.deck-opt { text-align: left; cursor: pointer; padding: 14px; border-radius: var(--r-sm, 12px); border: 1px solid var(--c-line); background: rgba(255,255,255,0.02); color: inherit; font: inherit; }
+.deck-opt b { display: block; }
+.deck-opt span { display: block; font-size: var(--fs-sm); opacity: .72; margin-top: 4px; }
+.deck-opt.on { border-color: var(--c-gold-line); background: var(--c-gold-glow); }
+.spread-group-title { font-weight: 800; margin: var(--sp-5) 0 var(--sp-2); color: var(--c-gold-soft); }
+
+/* 얇은 실제 카드 테두리 + 깊이감 */
+.tcard-face::after {
+  content: ""; position: absolute; inset: 0; border-radius: var(--card-radius);
+  border: 1px solid rgba(236,171,176,0.35);
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,0.18);
+  pointer-events: none;
+}
+
+/* 역방향 */
+.tcard.is-reversed .tcard-front svg,
+.tcard.is-reversed .tcard-front img { transform: rotate(180deg); }
+
+/* ---- 선택 전 부채꼴 스프레드 ---- */
+.spread {
+  position: relative;
+  display: flex; justify-content: center; align-items: flex-end;
+  min-height: calc(var(--card-h) + 60px);
+  padding: 30px 8px;
+  margin-inline: calc(-1 * var(--sp-4));
+}
+/* 모바일: 가로 스크롤 폴백 */
+.spread.scrolling {
+  overflow-x: auto; justify-content: flex-start; gap: 10px;
+  padding-inline: var(--sp-4); scroll-snap-type: x mandatory;
+}
+.spread.scrolling .spread-slot { position: static !important; transform: none !important; scroll-snap-align: center; }
+
+.spread-slot {
+  position: absolute;
+  transform-origin: bottom center;
+  transition: transform 0.3s var(--ease), filter 0.3s var(--ease);
+}
+.spread-slot .tcard { cursor: pointer; }
+.spread-slot .tcard:hover, .spread-slot .tcard:focus-within { transform: translateY(-14px); }
+.spread-slot.is-picked { z-index: 5; }
+.spread-slot.is-picked .tcard { transform: translateY(-22px); filter: drop-shadow(0 20px 30px rgba(0,0,0,0.55)); }
+.spread-slot.is-dimmed .tcard { filter: brightness(0.7) saturate(0.8); }
+
+/* 카드 미세 기울기(마우스/터치) — JS가 --rx/--ry 설정 */
+.tcard[data-tilt] .tcard-inner {
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+}
+.tcard.is-flipped[data-tilt] .tcard-inner {
+  transform: rotateY(180deg) rotateX(calc(-1 * var(--rx, 0deg))) rotateY(calc(-1 * var(--ry, 0deg)));
+}
+
+/* ---- 선택된 카드 결과 배열 ---- */
+.picked-row { display: flex; gap: var(--sp-4); justify-content: center; flex-wrap: wrap; }
+.picked-item { display: grid; gap: 10px; justify-items: center; text-align: center; max-width: var(--card-w); }
+.picked-item .pos-label { font-size: var(--fs-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-gold-soft); }
+.picked-item .card-name { font-family: var(--font-serif); font-size: var(--fs-sm); }
+.picked-item .card-dir { font-size: var(--fs-xs); color: var(--c-text-soft); }
+
+/* 카운터/진행 */
+.pick-counter { text-align: center; font-size: var(--fs-sm); color: var(--c-text-soft); margin-bottom: var(--sp-3); }
+.pick-counter b { color: var(--c-gold-soft); }
+
+/* ---- 확대 보기(라이트박스) ---- */
+.lightbox {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center; padding: var(--sp-5);
+  background: rgba(6,9,16,0.86); backdrop-filter: blur(6px);
+  animation: fade 0.2s var(--ease);
+}
+.lightbox .tcard { --card-w: min(74vw, 320px); --card-h: min(126vw, 544px); }
+.lightbox .lb-close { position: absolute; top: 16px; right: 16px; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tcard-inner { transition: none !important; }
+  .spread-slot { transition: none !important; }
+}
+
+/* ---- 카드 고르는 방식 ---- */
+.pick-methods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: var(--sp-3) 0; }
+.pm-chip { display: grid; gap: 2px; padding: 9px 6px; border-radius: 14px; text-align: center; cursor: pointer;
+  background: rgba(255, 228, 236, 0.12); border: 1px solid rgba(255, 215, 228, 0.36); color: var(--c-text); font: inherit; }
+.pm-chip b { font-size: var(--fs-sm); }
+.pm-chip span { font-size: 0.7rem; opacity: .75; }
+.pm-chip.on { background: linear-gradient(135deg, #ffe3d8, #ffc3d1 55%, #f6c8e2); color: #6b2d52; border-color: transparent; }
+@media (max-width: 420px) { .pm-chip span { display: none; } }
+
+/* 부채꼴 — 카드가 많을 땐 조금 작게 */
+.spread.fan { --card-w: 92px; --card-h: 156px; min-height: 250px; overflow: hidden; }
+@media (min-width: 720px) { .spread.fan { --card-w: 132px; --card-h: 224px; min-height: 340px; } }
+/* 전부 펼치기 — 격자 */
+.spread.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; align-items: start;
+  --card-w: 100%; --card-h: auto; min-height: 0; padding: 12px var(--sp-4); }
+.spread.grid .spread-slot { position: static !important; transform: none !important; }
+.spread.grid .tcard { width: 100%; height: auto; aspect-ratio: 13 / 20; }
+.spread.grid .spread-slot .tcard:hover { transform: translateY(-4px); }
+.spread.grid .spread-slot.is-picked .tcard { transform: translateY(-4px); }
+/* 가로로 넘기기 — 조금 작게 */
+.spread.scrolling { --card-w: 110px; --card-h: 187px; }
+/* 섞기 애니메이션 */
+.spread.shuffling .spread-slot { animation: haemyo-shuffle .9s var(--ease) both; animation-delay: calc(var(--i, 0) * 12ms); }
+@keyframes haemyo-shuffle {
+  0% { } 35% { transform: translate(0, -10px) rotate(0deg); left: 50%; }
+  55% { transform: translate(calc((var(--i, 0) - 10) * 1.5px), -14px) rotate(calc((var(--i, 0) - 10) * 1deg)); }
+  100% { }
+}
+/* 고른 카드는 맨 앞으로 */
+.spread .spread-slot.is-picked { z-index: 500 !important; }
+.spread.fan .spread-slot.is-picked .tcard { transform: translateY(-34px) scale(1.12); }
+.spread.fan .spread-slot.is-dimmed { opacity: .85; }
