@@ -1,0 +1,17 @@
+{
+  "name": "해묘 解猫 — 사주·타로·운세",
+  "short_name": "해묘",
+  "description": "인생이 묘할 때, 해묘 — 사주·타로·운세 자기분석 리포트",
+  "lang": "ko",
+  "id": "./",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1f1226",
+  "theme_color": "#2a1834",
+  "icons": [
+    { "src": "assets/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
