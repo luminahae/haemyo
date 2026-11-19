@@ -1,0 +1,30 @@
+# 🔔 해묘 운세 알림 — 1시간마다 알림 받을 시간이 된 회원에게 오늘의 운세를 보냄 (HAE)
+# 필요한 것: 저장소 Settings › Secrets and variables › Actions › New repository secret
+#   이름: FIREBASE_SERVICE_ACCOUNT   값: Firebase 서비스 계정 키(JSON 파일 내용 전체)
+name: 해묘 운세 알림
+on:
+  schedule:
+    - cron: "3 * * * *"   # 매시 3분 (한국 시간 기준으로 계산은 스크립트가 함)
+  workflow_dispatch:       # Actions 탭에서 '지금 실행'으로 바로 보내 보기
+    inputs:
+      test_uid:
+        description: "테스트로 지금 바로 보낼 회원 uid (비우면 평소처럼 시간 맞는 사람만)"
+        required: false
+        default: ""
+permissions:
+  contents: read
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --no-audit --no-fund firebase-admin@12.7.0
+      - run: node push/send.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          TEST_UID: ${{ github.event.inputs.test_uid }}
+          TZ: Asia/Seoul
