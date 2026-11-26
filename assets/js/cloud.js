@@ -978,3 +978,33 @@ export async function adminDeleteConsult(id) {
   const f = await fb().catch(() => null); if (!f) return { error: "먼저 로그인해 주세요." };
   try { await f.F.deleteDoc(f.F.doc(f.db, "consults", String(id))); return { ok: true }; } catch (e) { return { error: permMsg(e, "지우기") }; }
 }
+
+/* ---- ⭐ 상담사 평점 — expertRatings/{상담 id} (누구나 읽기 · 답변 받은 본인만 남기기 · 상담 하나에 하나) ---- */
+const maskName = (n) => { n = String(n || "익명").trim(); return n.length <= 1 ? n + "*" : n.slice(0, 1) + "*".repeat(Math.min(3, n.length - 1)); };
+export async function rateConsult(c, s, comment, name) {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser;
+  if (!u) return { error: "로그인한 뒤에 남길 수 있어요." };
+  const doc = { uid: u.uid, expertId: String(c.expertId).slice(0, 20), s: Math.max(1, Math.min(5, Math.round(+s || 0))), c: String(comment || "").trim().slice(0, 100), name: maskName(name).slice(0, 12), at: Date.now() };
+  try { await f.F.setDoc(f.F.doc(f.db, "expertRatings", c.id), doc); return { ok: true, rating: doc }; }
+  catch (e) { return { error: permMsg(e, "평점 남기기") }; }
+}
+export async function getMyRating(cid) {
+  const f = await fb().catch(() => null); if (!f) return null;
+  try { const s = await f.F.getDoc(f.F.doc(f.db, "expertRatings", String(cid))); return s.exists() ? s.data() : null; } catch { return null; }
+}
+/** 상담사별 { avg, n, list(최신순) } */
+export async function getExpertRatings() {
+  const f = await fb().catch(() => null); if (!f) return {};
+  try {
+    const qs = await f.F.getDocs(f.F.query(f.F.collection(f.db, "expertRatings"), f.F.limit(500)));
+    const by = {};
+    qs.docs.forEach((d) => { const r = { id: d.id, ...d.data() }; (by[r.expertId] = by[r.expertId] || []).push(r); });
+    const out = {};
+    Object.entries(by).forEach(([k, l]) => { l.sort((a, b) => (b.at || 0) - (a.at || 0)); const sum = l.reduce((a, r) => a + (r.s || 0), 0); out[k] = { avg: l.length ? sum / l.length : 0, n: l.length, list: l }; });
+    return out;
+  } catch { return {}; }
+}
+export async function adminDeleteRating(cid) {
+  const f = await fb().catch(() => null); if (!f) return { error: "먼저 로그인해 주세요." };
+  try { await f.F.deleteDoc(f.F.doc(f.db, "expertRatings", String(cid))); return { ok: true }; } catch (e) { return { error: permMsg(e, "지우기") }; }
+}

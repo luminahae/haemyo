@@ -13,7 +13,7 @@ import { todayFortune, tenGod } from "../saju/fortune.js";
 import { analyzeCompat } from "../saju/compat.js";
 import { loadTarotData, cardFrontHTML } from "../tarot/cardArt.js";
 import { getCoins, spend, addCoins, isAdmin, noCoinToast } from "../wallet.js";
-import { getUser, getExperts, createConsult, myConsults, getConsult, addConsultMsg, markConsultRead, adminConsults, adminReplyConsult, adminDeleteConsult, adminSetExperts, DEFAULT_EXPERTS } from "../cloud.js";
+import { getUser, getExperts, createConsult, myConsults, getConsult, addConsultMsg, markConsultRead, adminConsults, adminReplyConsult, adminDeleteConsult, adminSetExperts, DEFAULT_EXPERTS, rateConsult, getMyRating, getExpertRatings, adminDeleteRating } from "../cloud.js";
 import { aiReady, openChat, ask, aiErrorText } from "../ai.js";
 import { getConfig } from "../config.js";
 
@@ -78,10 +78,12 @@ export function renderConsult({ navigate }) {
     host.append(el("p", { class: "eyebrow cs-h", text: "상담사에게 묻기 · 24시간 안에 답해요" }));
     const grid = el("div", { class: "cs-grid" }, [el("p", { class: "tiny muted", text: "불러오는 중…" })]);
     host.append(grid);
-    const ex = (await getExperts().catch(() => DEFAULT_EXPERTS)).filter((e) => e.on !== false);
+    const [exAll, rates] = await Promise.all([getExperts().catch(() => DEFAULT_EXPERTS), getExpertRatings().catch(() => ({}))]);
+    const ex = exAll.filter((e) => e.on !== false);
     clear(grid);
     ex.forEach((e) => grid.append(el("article", { class: "panel cs-ex" }, [
       el("div", { class: "cs-ex-top" }, [el("span", { class: "cs-ex-em", text: e.em }), el("div", {}, [el("b", { text: e.name }), el("span", { class: "cs-tag", text: `${e.field} 상담` })])]),
+      rateLine(e, rates[e.id]),
       el("p", { class: "cs-ex-in", text: e.intro }),
       el("div", { class: "cs-ex-foot" }, [
         el("span", { class: "cs-cost", text: e.cost ? `코인 ${e.cost}개` : "무료" }),
@@ -178,6 +180,7 @@ export function renderConsultThread({ navigate, id }) {
         });
         host.append(el("div", { class: "cs-reply" }, [ta, b]));
       }
+      if (c.status !== "wait" && (c.msgs || []).some((mm) => mm.by === "e")) host.append(rateBox(c));
     };
     paint();
   })();
@@ -191,6 +194,64 @@ function bubble(side, text, who, at) {
       el("div", { class: "cs-b-tx" }, String(text || "").split(/\n+/).map((t) => el("p", { text: t }))),
     ]),
   ].filter(Boolean));
+}
+
+/* ---------------- ⭐ 상담사 평점 ---------------- */
+const starTxt = (n) => "★".repeat(Math.round(n)) + "☆".repeat(5 - Math.round(n));
+function rateLine(e, r) {
+  if (!r || !r.n) return el("div", { class: "cs-rate none" }, [el("span", { class: "cs-stars", text: "☆☆☆☆☆" }), el("span", { class: "tiny muted", text: "아직 후기가 없어요" })]);
+  return el("div", { class: "cs-rate" }, [
+    el("span", { class: "cs-stars", "aria-label": `별점 ${r.avg.toFixed(1)}점`, text: starTxt(r.avg) }),
+    el("b", { text: r.avg.toFixed(1) }), el("span", { class: "tiny muted", text: `(${r.n})` }),
+    el("button", { type: "button", class: "cs-rate-more", onclick: () => openRatings(e, r) }, [el("span", { text: "후기 ›" })]),
+  ]);
+}
+function openRatings(e, r) {
+  const dist = [5, 4, 3, 2, 1].map((k) => { const n = r.list.filter((x) => x.s === k).length; return el("div", { class: "cs-dist" }, [el("span", { text: `${k}점` }), el("i", {}, [el("b", { style: `width:${r.n ? Math.round(n / r.n * 100) : 0}%` })]), el("span", { class: "tiny muted", text: String(n) })]); });
+  const list = r.list.slice(0, 50).map((x) => el("div", { class: "cs-rv" }, [
+    el("div", { class: "cs-rv-h" }, [el("span", { class: "cs-stars", text: starTxt(x.s) }), el("span", { class: "tiny muted", text: `${x.name || "익명"} · ${fmt(x.at)}` })]),
+    x.c ? el("p", { text: x.c }) : el("p", { class: "tiny muted", text: "별점만 남겼어요." }),
+  ]));
+  openModal([
+    el("div", { class: "cs-rate big" }, [el("span", { class: "cs-stars", text: starTxt(r.avg) }), el("b", { text: r.avg.toFixed(1) }), el("span", { class: "tiny muted", text: `후기 ${r.n}개` })]),
+    el("div", { class: "cs-dists" }, dist), el("div", { class: "cs-rvs" }, list),
+    el("p", { class: "tiny muted", text: "답변을 받은 상담에서만 남길 수 있는 후기예요. 이름은 가려서 보여요." }),
+  ], { title: `${e.em} ${e.name} 상담사 후기` });
+}
+function rateBox(c) {
+  const box = el("div", { class: "panel cs-rbox" });
+  let cur = 0;
+  const paintBox = (mine, edit) => {
+    clear(box);
+    if (mine && !edit) {
+      box.append(el("div", { class: "cs-rbox-done" }, [
+        el("span", { text: "내 평점" }), el("span", { class: "cs-stars", text: starTxt(mine.s) }),
+        mine.c ? el("span", { class: "tiny muted cs-rbox-c", text: `“${mine.c}”` }) : null,
+        el("button", { type: "button", class: "cs-rate-more", onclick: () => paintBox(mine, true) }, [el("span", { text: "수정" })]),
+      ].filter(Boolean)));
+      return;
+    }
+    cur = mine ? mine.s : 0;
+    const stars = [1, 2, 3, 4, 5].map((k) => el("button", { type: "button", class: "cs-star", "aria-label": `${k}점`, text: "★" }));
+    const hint = el("span", { class: "tiny muted", text: cur ? `${cur}점` : "별을 눌러 주세요" });
+    const LAB = ["", "아쉬웠어요", "그저 그랬어요", "괜찮았어요", "좋았어요", "최고였어요"];
+    const show = () => { stars.forEach((b, i) => b.classList.toggle("on", i < cur)); hint.textContent = cur ? `${cur}점 · ${LAB[cur]}` : "별을 눌러 주세요"; };
+    stars.forEach((b, i) => b.addEventListener("click", () => { cur = i + 1; show(); }));
+    const ta = el("input", { class: "input", maxlength: "100", placeholder: "한 줄 후기 (없어도 돼요 · 100자까지)", value: mine ? mine.c || "" : "" });
+    const sb = el("button", { type: "button", class: "btn btn-primary btn-sm" }, [el("span", { text: mine ? "고치기" : "평점 남기기" })]);
+    sb.addEventListener("click", async () => {
+      if (!cur) { toast("별점을 먼저 골라 주세요"); return; }
+      sb.disabled = true;
+      const r = await rateConsult(c, cur, ta.value, c.name); sb.disabled = false;
+      if (r.error) { toast(r.error); return; }
+      toast("고마워요! 평점을 남겼어요 ⭐"); paintBox(r.rating, false);
+    });
+    box.append(el("p", { class: "eyebrow", text: `${c.expertName} 상담사는 어땠나요?` }), el("div", { class: "cs-stars-in" }, [...stars, hint]), ta, el("div", { class: "btn-row" }, [sb]));
+    show();
+  };
+  box.append(el("p", { class: "tiny muted", text: "평점 불러오는 중…" }));
+  getMyRating(c.id).then((mine) => paintBox(mine, false));
+  return box;
 }
 
 /* =========================== 🐱 AI 상담 =========================== */
@@ -380,11 +441,18 @@ function openAdminThread(c, reload) {
   const closeB = el("button", { type: "button", class: "btn btn-ghost btn-sm" }, [el("span", { text: "상담 끝내기" })]);
   let armed = false;
   const delB = el("button", { type: "button", class: "ev-del" }, [el("span", { text: "지우기" })]);
+  const rv = el("div", { class: "cs-rv-admin" });
   const m = openModal([
     el("p", { class: "tiny muted", text: `${c.name} · ${fmt(c.createdAt)} · ${c.field} 상담 (${c.expertName})` }),
     c.birth ? el("pre", { class: "cs-birth", text: c.birth }) : el("p", { class: "tiny muted", text: "사주 정보 없이 보낸 상담이에요." }),
-    msgs, ta, el("div", { class: "btn-row" }, [sendB, closeB, delB]),
+    msgs, rv, ta, el("div", { class: "btn-row" }, [sendB, closeB, delB]),
   ], { title: c.title || "상담" });
+  getMyRating(c.id).then((x) => {
+    if (!x) return;
+    const dB = el("button", { type: "button", class: "ev-del" }, [el("span", { text: "평점 지우기" })]);
+    dB.addEventListener("click", async () => { const r = await adminDeleteRating(c.id); if (r.error) { toast(r.error); return; } toast("평점을 지웠어요"); clear(rv); });
+    rv.append(el("div", { class: "cs-rbox-done" }, [el("span", { text: "받은 평점" }), el("span", { class: "cs-stars", text: starTxt(x.s) }), x.c ? el("span", { class: "tiny muted cs-rbox-c", text: `“${x.c}”` }) : null, dB].filter(Boolean)));
+  });
   sendB.addEventListener("click", async () => {
     if (ta.value.trim().length < 2) return; sendB.disabled = true;
     const r = await adminReplyConsult(c, ta.value.trim()); sendB.disabled = false;

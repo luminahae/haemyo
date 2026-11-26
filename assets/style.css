@@ -5151,3 +5151,32 @@ body:has(.action-bar) .cat-fab { bottom: calc(202px + env(safe-area-inset-bottom
   body:has(.dl-fab.float) .cat-fab { bottom: 236px; }
   body:has(.action-bar) .cat-fab { bottom: calc(234px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* ⭐ 상담사 평점 */
+.cs-rate { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; min-height: 28px; font-size: .86rem; }
+.cs-rate b { color: var(--c-gold); }
+.cs-rate.big { font-size: 1.1rem; justify-content: center; margin-bottom: 10px; }
+.cs-rate.big .cs-stars { font-size: 1.3rem; }
+.cs-stars { color: var(--c-gold); letter-spacing: 0; }
+.cs-rate.none .cs-stars { color: var(--c-text-faint); }
+.cs-rate-more { margin-left: auto; background: none; border: 0; color: var(--c-gold-soft); font: inherit; font-size: .8rem; cursor: pointer; padding: 0 2px; line-height: 1.4; }
+.cs-rate-more:hover { color: var(--c-gold); text-decoration: underline; }
+.cs-dists { display: grid; gap: 4px; margin: 6px 0 14px; }
+.cs-dist { display: grid; grid-template-columns: 34px 1fr 26px; align-items: center; gap: 8px; font-size: .8rem; }
+.cs-dist i { display: block; height: 7px; border-radius: 99px; background: var(--c-line); overflow: hidden; }
+.cs-dist i b { display: block; height: 100%; background: var(--c-gold); border-radius: 99px; }
+.cs-rvs { display: grid; gap: 8px; max-height: 50vh; overflow: auto; margin-bottom: 10px; }
+.cs-rv { padding: 10px 12px; border: 1px solid var(--c-line); border-radius: 12px; }
+.cs-rv-h { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.cs-rv p { margin: 0; font-size: .88rem; line-height: 1.6; word-break: keep-all; }
+.cs-rbox { margin-top: 16px; display: grid; gap: 10px; }
+.cs-rbox .eyebrow { margin: 0; }
+.cs-stars-in { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.cs-star { width: 40px; height: 40px; font-size: 1.6rem; line-height: 1; background: none; border: 0; cursor: pointer; color: var(--c-line-strong); transition: transform .15s, color .15s; }
+.cs-star.on { color: var(--c-gold); text-shadow: 0 0 10px var(--c-gold-glow); }
+.cs-star:hover { transform: scale(1.15); }
+.cs-stars-in .tiny { margin-left: 6px; }
+.cs-rbox-done { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .9rem; }
+.cs-rbox-done .cs-rate-more, .cs-rbox-done .ev-del { margin-left: auto; }
+.cs-rbox-c { flex-basis: 100%; order: 9; }
+.cs-rv-admin:not(:empty) { padding: 10px 12px; border: 1px dashed var(--c-gold-line); border-radius: 12px; }
