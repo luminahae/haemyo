@@ -802,14 +802,15 @@ function termRow(label, terms) {
 const AI_CHAT_LOCKED = true; // 잠깐 잠금 — 다시 켜려면 false로
 function aiChatCard(profile, input) {
   if (AI_CHAT_LOCKED) {
-    return el("div", { class: "panel report-card ai-locked", style: "opacity:.85;" }, [
+    // 예전 '내 API 키' 방식 대신 새 🐱 해묘냥 AI 상담으로 이어 줘요 (HAE)
+    return el("a", { href: "#/ai-consult", class: "panel report-card ai-go", style: "display:block; text-decoration:none; color:inherit;" }, [
       el("div", { style: "display:flex; align-items:center; gap:10px;" }, [
-        el("span", { class: "rc-index", style: "opacity:.6;" }, [icon("lock")]),
-        el("div", { style: "flex:1;" }, [
-          el("span", { class: "rc-title", style: "display:block;" }, [document.createTextNode("AI 상담 (대화형)")]),
-          el("span", { class: "rc-sub", text: "준비 중이에요 · 곧 다시 열려요" }),
+        el("span", { class: "rc-index" }, [icon("sparkle")]),
+        el("div", { style: "flex:1; min-width:0;" }, [
+          el("span", { class: "rc-title", style: "display:block;" }, [document.createTextNode("🐱 해묘냥 AI 상담")]),
+          el("span", { class: "rc-sub", text: "내 사주를 바탕으로 무엇이든 물어보기 · 질문마다 코인 5개" }),
         ]),
-        el("span", { class: "hap-tag", text: "잠금" }),
+        el("span", { class: "hap-tag", text: "열기 ›" }),
       ]),
     ]);
   }

@@ -69,7 +69,7 @@ export function renderConsult({ navigate }) {
     host.append(el("button", { type: "button", class: "cs-ai", onclick: () => navigate("/ai-consult") }, [
       el("span", { class: "cs-ai-pic", style: 'background-image:url("assets/img/haemyo.webp")', "aria-hidden": "true" }),
       el("span", { class: "cs-ai-tx" }, [
-        el("b", { text: "🐱 해묘 AI 상담" }),
+        el("b", { text: "🐱 해묘냥 AI 상담" }),
         el("small", { text: aiReady() ? `지금 바로 답해 줘요 · 질문마다 코인 ${getConfig().ai.costPerQ || 5}개` : "준비 중이에요 · 곧 열려요" }),
       ]),
       el("span", { class: "cs-ai-go", "aria-hidden": "true", text: "›" }),
@@ -207,7 +207,7 @@ function rnd() { try { const a = new Uint32Array(1); crypto.getRandomValues(a); 
 export function renderAIConsult({ navigate }) {
   const root = el("div", { class: "cs ai" });
   root.append(el("div", { class: "wrap", style: "margin-bottom: var(--sp-3);" }, [backLink(navigate, "/consult", "상담소")]));
-  root.append(pageHeader("AI COUNSEL", "해묘 AI 상담", "내 사주(四柱) · 타로 · 그 사람 사주를 바탕으로 해묘 고양이가 바로 답해요. 대화는 이 기기에만 남아요."));
+  root.append(pageHeader("AI COUNSEL", "해묘냥 AI 상담", "내 사주(四柱) · 타로 · 그 사람 사주를 바탕으로 해묘냥이 바로 답해요. 대화는 이 기기에만 남아요."));
   const host = el("section", { class: "wrap" });
   root.append(host);
   (async () => {
@@ -283,10 +283,10 @@ export function renderAIConsult({ navigate }) {
     const paintLog = () => {
       clear(log);
       const h = hist[histKey()] || [];
-      if (!h.length) log.append(bubble("ex", mode === "tarot" ? "질문을 적으면 제가 카드 세 장을 뽑아서 읽어 드릴게요. 마음속으로 질문을 한 번 떠올려 봐요 🐾" : mode === "love" ? "그 사람과의 이야기, 편하게 털어놔요. 두 사람 사주를 같이 보고 답할게요 💗" : "안녕하세요, 해묘예요. 당신의 사주를 펼쳐 놓고 기다리고 있었어요. 무엇이든 물어봐요 🐾", "해묘"));
+      if (!h.length) log.append(bubble("ex", mode === "tarot" ? "질문을 적으면 제가 카드 세 장을 뽑아서 읽어 드릴게요. 마음속으로 질문을 한 번 떠올려 봐요 🐾" : mode === "love" ? "그 사람과의 이야기, 편하게 털어놔요. 두 사람 사주를 같이 보고 답할게요 💗" : "안녕하세요, 해묘냥이에요. 당신의 사주를 펼쳐 놓고 기다리고 있었어요. 무엇이든 물어봐요 🐾", "해묘냥"));
       h.forEach((m) => {
         if (m.cards) log.append(cardRow(m.cards));
-        log.append(bubble(m.role === "user" ? "me" : "ex", m.text, m.role === "user" ? "나" : "해묘"));
+        log.append(bubble(m.role === "user" ? "me" : "ex", m.text, m.role === "user" ? "나" : "해묘냥"));
       });
       requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
     };
@@ -320,7 +320,7 @@ export function renderAIConsult({ navigate }) {
         log.append(cardRow(drawn));
       }
       log.append(bubble("me", q, "나"));
-      const out = bubble("ex", "…", "해묘"); out.classList.add("typing");
+      const out = bubble("ex", "…", "해묘냥"); out.classList.add("typing");
       log.append(out); log.scrollTop = log.scrollHeight;
       const tx = out.querySelector(".cs-b-tx");
       try {

@@ -443,6 +443,7 @@ function mount(node, opts = {}) {
   clear(viewEl);
   const dl = DOWNLOADABLE.find(([rx]) => rx.test(currentPath()));
   if (mountObs) { mountObs.disconnect(); mountObs = null; }
+  try { updateCatFab(); } catch { /* ignore */ }
   viewEl.appendChild(node);
   if (dl) {
     // 저장 버튼 — 하단 액션 바가 있으면 바 안에(겹침 없음), 없으면 오른쪽 아래
@@ -498,6 +499,18 @@ function setupToTop() {
   }, [icon("arrowUp")]);
   document.body.appendChild(toTopBtn);
   window.addEventListener("scroll", updateToTop, { passive: true });
+  // 🐱 해묘냥 AI 상담 바로가기 — 오른쪽 아래 버튼들 맨 위 (상담 화면 · 관리자 화면에선 숨김)
+  catFab = el("a", { class: "cat-fab", href: "#/ai-consult", "aria-label": "해묘냥 AI 상담 열기" }, [
+    el("span", { class: "cat-fab-pic", "aria-hidden": "true" }),
+    el("span", { class: "cat-fab-tx", text: "해묘냥 상담" }),
+  ]);
+  document.body.appendChild(catFab);
+  updateCatFab();
+}
+let catFab;
+function updateCatFab() {
+  if (!catFab) return;
+  catFab.hidden = /^\/(ai-consult|consult|admin|profile\/login|saju\/loading)/.test(currentPath());
 }
 function updateToTop() {
   if (!toTopBtn) return;

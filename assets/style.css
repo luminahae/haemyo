@@ -492,7 +492,7 @@ fieldset { border: 0; padding: 0; }
 
 /* ---------- Back-to-top ---------- */
 .to-top {
-  position: fixed; right: 16px; bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  position: fixed; right: 22px; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); /* 58px 버튼들과 가운데 맞춤 */
   width: 46px; height: 46px; border-radius: 50%;
   display: grid; place-items: center; z-index: 30;
   background: var(--c-bg-elev-2); border: 1px solid var(--c-gold-line); color: var(--c-gold-soft);
@@ -4822,30 +4822,35 @@ button.dash-t:hover { background: rgba(255,255,255,.1); }
 .sel-del:disabled { opacity: .45; cursor: default; }
 .sel-bar[hidden] { display: none; }
 
-/* 🐱 로딩 고양이 (HAE) */
-.cat-load { width: 148px; height: 128px; }
-.cat-svg { width: 100%; height: 100%; overflow: visible; }
-.cat-body { fill: #ffc3d1; }
-.cat-ear { fill: #ff9fb7; }
-.cat-eyes ellipse { fill: #3a2640; }
-.cat-nose { fill: #ff7f9b; }
-.cat-wh { stroke: rgba(58, 38, 64, .55); stroke-width: 1.4; stroke-linecap: round; fill: none; }
-.cat-paw { fill: #ffd6e0; }
-.cat-tail { fill: none; stroke: #ffc3d1; stroke-width: 8; stroke-linecap: round; transform-origin: 86px 104px; animation: catTail 1.6s ease-in-out infinite; }
-.cat-eyes { transform-origin: 68px 56px; animation: catBlink 3.6s infinite; }
-.cat-moon { fill: #ffe2b0; opacity: .9; }
-.cat-yarn circle { fill: #b9a7d6; }
-.cat-yarn path { stroke: rgba(58, 38, 64, .4); stroke-width: 1.4; fill: none; }
-.cat-yarn { transform-origin: 24px 109px; animation: catYarn 1s cubic-bezier(.4, 0, .6, 1) infinite; }
-.cat-spk path { fill: #ffe2b0; transform-box: fill-box; transform-origin: center; animation: catSpk 2.4s ease-in-out infinite; }
-.cat-spk .s2 { animation-delay: .8s; } .cat-spk .s3 { animation-delay: 1.6s; }
+/* 🐱 로딩 고양이 — 해묘 대표 그림 (HAE) */
+.cat-load { position: relative; width: 168px; height: 168px; margin: 0 auto; }
+.hm-glow { position: absolute; inset: 14px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 214, 230, .55), rgba(255, 190, 215, 0) 70%); animation: hmGlow 2.8s ease-in-out infinite; }
+.hm-ring { position: absolute; inset: 22px; border-radius: 50%; border: 1.5px dashed rgba(255, 226, 176, .45); animation: hmSpin 14s linear infinite; }
+.hm-cat { position: absolute; left: 50%; top: 50%; width: 112px; height: 112px; margin: -60px 0 0 -56px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 4px rgba(255, 220, 232, .55), 0 10px 26px rgba(40, 10, 40, .35); animation: hmFloat 2.4s ease-in-out infinite; user-select: none; }
+.hm-shadow { position: absolute; left: 50%; bottom: 8px; width: 70px; height: 10px; margin-left: -35px; border-radius: 50%; background: rgba(30, 8, 30, .28); filter: blur(2px); animation: hmShadow 2.4s ease-in-out infinite; }
+.hm-moon { position: absolute; right: 12px; top: 10px; width: 26px; height: 26px; border-radius: 50%; box-shadow: -7px 4px 0 0 #ffe2b0; transform: rotate(-20deg); animation: hmMoon 3.2s ease-in-out infinite; }
+.hm-orbit { position: absolute; inset: 0; animation: hmSpin 9s linear infinite; }
+.hm-orbit i { position: absolute; font-style: normal; color: #ffe2b0; text-shadow: 0 0 8px rgba(255, 226, 176, .9); animation: hmTwinkle 1.8s ease-in-out infinite; }
+.hm-orbit .o1 { left: 6px; top: 46px; font-size: 16px; }
+.hm-orbit .o2 { right: 2px; bottom: 44px; font-size: 13px; animation-delay: .6s; }
+.hm-orbit .o3 { left: 46px; bottom: 2px; font-size: 11px; animation-delay: 1.2s; }
+.hm-orbit .o4 { left: 50%; top: 0; font-size: 22px; animation-delay: .3s; }
+.hm-dots { display: inline-flex; gap: 6px; margin-top: 10px; }
+.hm-dots i { width: 7px; height: 7px; border-radius: 50%; background: #ffc6d6; animation: hmDot 1.2s ease-in-out infinite; }
+.hm-dots i:nth-child(2) { animation-delay: .15s; } .hm-dots i:nth-child(3) { animation-delay: .3s; }
 .cat-loader { gap: var(--sp-4); }
-.cat-lost .cat-eyes ellipse { ry: 1.2; }
-@keyframes catTail { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(14deg); } }
-@keyframes catBlink { 0%, 44%, 48%, 100% { transform: scaleY(1); } 46% { transform: scaleY(.1); } }
-@keyframes catYarn { 0%, 100% { transform: translateY(0) scale(1, .92); } 45% { transform: translateY(-16px) scale(1); } }
+.cat-lost .hm-cat { filter: grayscale(.35) brightness(.92); animation: hmLost 3s ease-in-out infinite; }
+.cat-lost .hm-orbit, .cat-lost .hm-ring { opacity: .35; }
+@keyframes hmFloat { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+@keyframes hmShadow { 0%, 100% { transform: scaleX(1); opacity: .9; } 50% { transform: scaleX(.75); opacity: .5; } }
+@keyframes hmGlow { 0%, 100% { transform: scale(.94); opacity: .7; } 50% { transform: scale(1.06); opacity: 1; } }
+@keyframes hmSpin { to { transform: rotate(360deg); } }
+@keyframes hmTwinkle { 0%, 100% { opacity: .25; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.15); } }
+@keyframes hmMoon { 0%, 100% { transform: rotate(-20deg) translateY(0); } 50% { transform: rotate(-8deg) translateY(-4px); } }
+@keyframes hmDot { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-6px); opacity: 1; } }
+@keyframes hmLost { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
 @keyframes catSpk { 0%, 100% { transform: scale(.4); opacity: .3; } 50% { transform: scale(1.1); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .cat-tail, .cat-eyes, .cat-yarn, .cat-spk path { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .hm-cat, .hm-glow, .hm-ring, .hm-orbit, .hm-orbit i, .hm-moon, .hm-shadow, .hm-dots i { animation: none; } }
 /* 저장 중 — 글자 앞에 털실 굴리는 작은 고양이 발 */
 .dl-status.busy::before { content: "🐾"; display: inline-block; margin-right: 6px; animation: catYarn 1s ease-in-out infinite; }
 
@@ -5128,3 +5133,21 @@ button.dash-t:hover { background: rgba(255,255,255,.1); }
 .cs-exed-r { display: grid; gap: 6px; padding: 10px; border-radius: 12px; background: rgba(0, 0, 0, .14); }
 .cs-exed-line { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .cs-exed-line .input { flex: 1; min-width: 70px; }
+
+/* ---- 🐱 해묘냥 상담 바로가기 (오른쪽 아래 버튼들 맨 위 · HAE) ---- */
+.cat-fab { position: fixed; right: 16px; bottom: calc(142px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+  width: 58px; height: 58px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: linear-gradient(135deg, #fff1d6, #ffd3e0 60%, #f3c6ee); color: #6b2d52; text-decoration: none;
+  box-shadow: 0 10px 22px -8px rgba(120, 50, 90, .55), inset 0 1px 0 rgba(255, 255, 255, .6); transition: transform .2s var(--ease); }
+.cat-fab:hover { transform: translateY(-2px); }
+.cat-fab:active { transform: scale(.95); }
+.cat-fab[hidden] { display: none; }
+.cat-fab-pic { width: 30px; height: 30px; border-radius: 50%; background: url("img/haemyo.webp") center / cover no-repeat; box-shadow: 0 0 0 2px rgba(255, 255, 255, .8); }
+.cat-fab-tx { font-size: .5rem; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; white-space: nowrap; }
+body:has(.dl-fab.float) .cat-fab { bottom: calc(212px + env(safe-area-inset-bottom, 0px)); }
+body:has(.action-bar) .cat-fab { bottom: calc(202px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 760px) {
+  .cat-fab { right: 22px; bottom: 150px; }
+  body:has(.dl-fab.float) .cat-fab { bottom: 236px; }
+  body:has(.action-bar) .cat-fab { bottom: calc(234px + env(safe-area-inset-bottom, 0px)); }
+}

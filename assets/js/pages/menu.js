@@ -8,7 +8,7 @@ import { canSeeLifespan } from "../wallet.js";
    ========================================================= */
 export const MENU = [
   { id: "counsel", title: "상담", em: "🐱", color: "#ffd9a8", items: [
-    { id: "aicounsel", em: "🐱", name: "해묘 AI 상담", blurb: "내 사주 · 타로로 바로 답해요", to: "/ai-consult", isNew: true },
+    { id: "aicounsel", em: "🐱", name: "해묘냥 AI 상담", blurb: "내 사주 · 타로로 바로 답해요", to: "/ai-consult", isNew: true },
     { id: "consulthub", em: "🔮", name: "해묘 상담소", blurb: "타로 · 사주 · 연애 상담사에게 묻기", to: "/consult", isNew: true },
   ] },
   { id: "saju", title: "사주 · 명리", em: "🔮", color: "#ffc3d1", items: [

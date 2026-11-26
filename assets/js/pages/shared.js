@@ -115,11 +115,11 @@ export function openModal(children, { title = "", onClose } = {}) {
 }
 
 
-/* 🐱 로딩 고양이 — 꼬리 살랑 · 눈 깜빡 · 털실 통통 · 별 반짝 (HAE)
+/* 🐱 로딩 고양이 — 해묘 대표 그림이 둥실 떠오르고 달 · 별이 반짝 (HAE)
    catLoader("리포트를 준비하고 있어요", stepEl) — 움직임 줄이기 설정이면 가만히 */
-export const CAT_SVG = `<svg class="cat-svg" viewBox="0 0 140 120" aria-hidden="true"><g class="cat-spk"><path class="s1" d="M110 18l2.4 6 6 2.4-6 2.4-2.4 6-2.4-6-6-2.4 6-2.4z"/><path class="s2" d="M26 26l1.8 4.4 4.4 1.8-4.4 1.8-1.8 4.4-1.8-4.4-4.4-1.8 4.4-1.8z"/><path class="s3" d="M122 56l1.4 3.4 3.4 1.4-3.4 1.4-1.4 3.4-1.4-3.4-3.4-1.4 3.4-1.4z"/></g><path class="cat-moon" d="M96 30a14 14 0 1 0 14 18 11 11 0 1 1-14-18z"/><g class="cat-yarn"><circle cx="24" cy="100" r="9"/><path d="M16 96c5 2 11 2 16-2M15 102c6 3 12 2 18-3M20 92c2 5 2 12-1 17" /></g><path class="cat-tail" d="M86 104c18 2 26-10 20-24"/><ellipse class="cat-body" cx="68" cy="94" rx="24" ry="20"/><path class="cat-body" d="M50 46l2-20 12 12zM86 46l-2-20-12 12z"/><circle class="cat-body" cx="68" cy="56" r="20"/><path class="cat-ear" d="M53 41l1.3-10 6.5 6.5zM83 41l-1.3-10-6.5 6.5z"/><g class="cat-eyes"><ellipse cx="60.5" cy="56" rx="2.4" ry="3.3"/><ellipse cx="75.5" cy="56" rx="2.4" ry="3.3"/></g><path class="cat-nose" d="M66 62h4l-2 2.4z"/><path class="cat-wh" d="M52 63h-9M52 66l-8 2M84 63h9M84 66l8 2"/><ellipse class="cat-paw" cx="60" cy="112" rx="6" ry="3.4"/><ellipse class="cat-paw" cx="76" cy="112" rx="6" ry="3.4"/></svg>`;
+export const CAT_SVG = `<span class="hm-glow"></span><span class="hm-ring"></span><span class="hm-moon"></span><span class="hm-orbit"><i class="o1">✦</i><i class="o2">✧</i><i class="o3">✦</i><i class="o4">·</i></span><img class="hm-cat" src="assets/img/haemyo.webp" alt="" draggable="false"><span class="hm-shadow"></span>`;
 export function catLoader(title, sub) {
   const pic = el("div", { class: "cat-load", role: "img", "aria-label": "해묘 고양이가 준비하는 중" });
   pic.innerHTML = CAT_SVG;
-  return el("div", { class: "loader cat-loader" }, [pic, el("div", {}, [title ? el("h1", { class: "serif", style: "font-size: var(--fs-h2);", text: title }) : null, sub || null].filter(Boolean))]);
+  return el("div", { class: "loader cat-loader" }, [pic, el("div", {}, [title ? el("h1", { class: "serif", style: "font-size: var(--fs-h2);", text: title }) : null, sub || null, el("span", { class: "hm-dots", "aria-hidden": "true" }, [el("i"), el("i"), el("i")])].filter(Boolean))]);
 }
