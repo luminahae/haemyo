@@ -3,7 +3,7 @@ import { unstash, saveResult, makeId } from "../state.js";
 import { computeSaju } from "../saju/manse.js";
 import { analyzeCompat } from "../saju/compat.js";
 import { analyzeStrength } from "../saju/strength.js";
-import { analyzeStart, analyzeBreakup, reunionTiming } from "../saju/relationship.js";
+import { analyzeStart, analyzeBreakup, reunionTiming } from "../saju/compat.js";
 import { backLink, noticeBox, insight, loadDisclaimer } from "./shared.js";
 import { savePersonOffer } from "./people.js";
 import { renderShareCard, downloadBlob, shareImage } from "../utils/shareImage.js";

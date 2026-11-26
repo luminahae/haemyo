@@ -1,15 +1,15 @@
-import { relTermKey } from "../utils/glossary.js";
+import { relTermKey } from "../utils/dom.js";
 import { daeunFlowBlock } from "./special.js";
 import { el, clear, toast, copyText, seedFromString, icon, prefersReducedMotion } from "../utils/dom.js";
 import { unstash, saveResult, makeId, getResult, stash } from "../state.js";
-import { backLink, noticeBox, insight, renderBlock, loadDisclaimer, openModal } from "./shared.js";
+import { backLink, noticeBox, insight, renderBlock, loadDisclaimer, openModal, catLoader } from "./shared.js";
 import { renderShareCard, maskedProfileLabel, downloadBlob, shareImage, exportNodeAsImage, exportNodeAsPdf } from "../utils/shareImage.js";
 import { daeunTimeline, yearFlow, ageFromSolar, todayFortune, benefactorFoe } from "../saju/fortune.js";
-import { analyzeStart, analyzeBreakup, reunionOutlook, harmonyBetween, monthlyFlow } from "../saju/relationship.js";
+import { analyzeStart, analyzeBreakup, reunionOutlook, harmonyBetween, monthlyFlow } from "../saju/compat.js";
 import { computeSaju } from "../saju/manse.js";
 import { analyzeStrength, STRENGTH_ELEM_KR, analyzeStrength as _anStr } from "../saju/strength.js";
 import { buildManse, MANSE_GLOSSARY, SINSAL_MEANING, sajuDeep, manseInfo, daeunColumns, yearColumns, monthColumns, dayCalendar } from "../saju/manseryeok.js";
-import { charmSpirits, idealType, spousePortrait, portraitSvg } from "../saju/spouse.js";
+import { charmSpirits, idealType, spousePortrait, portraitSvg } from "../saju/report.js";
 import { isAIConfigured, getAIConfig, setAIConfig, clearAIConfig, streamChat } from "../saju/strength.js";
 import { isUnlocked, unlock, getCoins, costOf, chartItemId, noCoinToast, canSeeLifespan } from "../wallet.js";
 import { sijinLabel, hk } from "./sajuInput.js";
@@ -1660,15 +1660,7 @@ export async function renderSajuLoading({ navigate, mount }) {
   if (!input) { navigate("/saju"); return; }
 
   const stepText = el("p", { class: "muted", text: STEPS[0], "aria-live": "polite" });
-  const view = el("div", { class: "wrap" }, [
-    el("div", { class: "loader" }, [
-      el("div", { class: "loader-orbit" }, [el("span", { class: "loader-dot" })]),
-      el("div", {}, [
-        el("h1", { class: "serif", style: "font-size: var(--fs-h2);", text: "리포트를 준비하고 있어요" }),
-        stepText,
-      ]),
-    ]),
-  ]);
+  const view = el("div", { class: "wrap" }, [catLoader("리포트를 준비하고 있어요", stepText)]);
   mount(view, { noFocus: true });
 
   const sections = await loadSections();

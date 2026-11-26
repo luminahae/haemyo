@@ -27,6 +27,21 @@ export const CONFIG = {
      비워 두면 알림 설정 칸에 '준비 중'으로 보여요. */
   pushVapidKey: "BKplLemw19JleX7v-QeE9B44ez5lIaP0LF7jZJAUWeNyBVelR8ozg6eqTs8USJWQJxJ5SvuzEkU23ubtI5ZTf5g",
 
+  /* ---- 🐱 해묘 AI 상담 (Firebase AI Logic · Gemini) ----
+     Firebase 콘솔 › AI 서비스 › AI Logic › 시작하기 → 'Gemini Developer API' 선택 (결제 등록 없이 무료 한도 안에서 사용)
+     콘솔이 App Check(앱 확인)를 켜라고 하면: App Check › 앱 › 웹 앱 등록 › reCAPTCHA Enterprise
+       → 만들어진 '사이트 키'를 아래 siteKey 에 붙여 넣기 (공개용 키라 넣어도 괜찮아요)
+     siteKey 가 비어 있으면 AI 상담은 '준비 중'으로 보이고, 상담소(사람 상담)는 그대로 열려요.
+     model: 콘솔 › AI Logic › 모델 목록에서 '결제 필요 없음' 표시가 있는 모델 이름 (바꿔도 돼요) */
+  ai: {
+    siteKey: "6Ld3wTIuAAAAAGApFTDa6Z8HvZLbXVUerK-_qdzh",   // reCAPTCHA Enterprise(Fraud Defense) 웹 키 · luminahae.github.io 전용
+    recaptcha: "enterprise",        // "enterprise" | "v3"
+    model: "gemini-3.5-flash-lite",
+    costPerQ: 5,                    // 질문 1번에 드는 코인 (답을 못 받으면 돌려줘요)
+    freePerDay: 0,                  // 하루 무료 질문 수 (0 = 무료 없음)
+    maxPerDay: 20,                  // 한 사람 하루 최대 질문 수 (무료 한도 보호)
+  },
+
   /* ---- 코인 충전(소액결제) 설정 — 점신/포스텔러식 ----
      해석 1회 = 1코인(기본 500원). 충전은 외부 결제사의 안전한(PCI) 페이지에서 처리하고,
      결제 후 받은 '라이선스 키'를 입력하면 해당 패키지만큼 코인이 충전됩니다.

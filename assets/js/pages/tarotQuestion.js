@@ -772,7 +772,7 @@ function tarotText(reading, topic) {
 /* ===================================================================
    (합침) oracle.js — 파일 수를 줄이려고 이 파일 안으로 옮김 (HAE)
    =================================================================== */
-import { buildOracle } from "../tarot/oracle.js";
+import { buildOracle } from "../tarot/intent.js";
 
 
 /* (합침) ./tarotQuestion.js 에서 가져오던 것 — 이제 같은 파일 */

@@ -112,4 +112,23 @@ for (const doc of snap.docs) {
   }
 }
 console.log(`보냄 ${sent} · 건너뜀 ${skipped} · 끊긴 기기 ${dead}`);
+
+/* 🔮 상담소 — 상담사 답변이 도착하면 알림 (매시간 · 아직 안 알린 답변만, 알림 시간 설정과 상관없이) */
+try {
+  const cs = await db.collection("consults").where("replyPushed", "==", false).limit(100).get();
+  let cn = 0;
+  for (const c of cs.docs) {
+    const d = c.data();
+    try {
+      const p = await db.collection("push").doc(d.uid).get();
+      const t = p.exists ? p.data() : null;
+      if (t && t.on && t.token) {
+        await fcm.send({ token: t.token, data: { title: `🔮 ${d.expertName || "상담사"}의 답변이 도착했어요`, body: `‘${String(d.title || "상담").slice(0, 30)}’ — 눌러서 확인해 보세요 🐾`, link: `#/consult/${c.id}`, tag: `hae-consult-${c.id}` }, webpush: { headers: { Urgency: "high", TTL: "86400" } } });
+        cn++;
+      }
+    } catch (e) { console.log("상담 알림 실패", c.id, (e && e.code) || e.message); }
+    await c.ref.update({ replyPushed: true });
+  }
+  console.log(`상담 답변 알림 ${cn}건`);
+} catch (e) { console.log("상담 알림 건너뜀", e.message); }
 process.exit(0);

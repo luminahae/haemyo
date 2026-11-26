@@ -381,7 +381,8 @@ async function captureNode(node, onClone) {
   if (node.classList && node.classList.contains("xp-sheet")) { try { bakeStyles(node); } catch { /* ignore */ } }
   try {
     const h = node.scrollHeight;
-    const scale = Math.max(1, Math.min(2, 14000 / Math.max(1, h)));
+    const isImg = node.classList && node.classList.contains("xp-img");
+    const scale = Math.max(1, Math.min(isImg ? 2.5 : 2, (isImg ? 16000 : 14000) / Math.max(1, h)));
     return await h2c(node, {
       backgroundColor: node.classList && node.classList.contains("xp-sheet") ? "#3a2640" : "#8a5d86", scale, useCORS: true, logging: false,
       ignoreElements: (el) => !!(el.hasAttribute && (el.hasAttribute("data-nocapture") || (el.classList && (el.classList.contains("action-bar") || el.classList.contains("person-switch") || el.classList.contains("to-top") || el.classList.contains("dl-sheet"))))),
@@ -660,7 +661,9 @@ export async function nodeToPngPages(node) {
   const canvas = await captureNode(node, measure);
   if (!info) measure(node);
   // 되도록 '한 장'으로 — 세로 길이는 내용에 맞춰 늘리되(최대 폰 화면 비율 1080×2400), 넘치면 글자를 조금 줄이고(최대 62%), 그래도 넘칠 때만 2장 이상으로
-  const W = 1080, pad = 40, headH = 92, footH = 76, MINH = 1080, MAXH = 2560;
+  // 🖼 고화질 — 폭 1440px(예전 1080) · 머리띠에 고양이 로고 · 아래에 사이트 주소 (HAE)
+  const W = 1440, pad = 56, headH = 128, footH = 108, MINH = 1440, MAXH = 3400;
+  const logo = await new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = new URL("../../img/icon-192.png", import.meta.url).href; });
   const frame = headH + footH + 8;
   const s0 = (W - pad * 2) / canvas.width;
   const need = (sc) => canvas.height * sc;
@@ -694,16 +697,21 @@ export async function nodeToPngPages(node) {
     const H = Hall || hOf(h);
     const c = document.createElement("canvas"); c.width = W; c.height = H;
     const x = c.getContext("2d");
-    x.fillStyle = "#3a2640"; x.fillRect(0, 0, W, H);
-    // 머리띠: 브랜드 · 쪽수
-    x.textBaseline = "middle"; x.textAlign = "left"; x.fillStyle = "#ffc3d1"; x.font = `700 28px ${font}`;
-    x.fillText("☾ 해묘 解猫", pad, headH / 2 + 4);
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
+    const bg = x.createLinearGradient(0, 0, W * 0.4, H); bg.addColorStop(0, "#43294b"); bg.addColorStop(1, "#2e1d36");
+    x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    // 머리띠: 고양이 로고 · 브랜드 · 쪽수
+    x.textBaseline = "middle"; x.textAlign = "left";
+    let bx = pad;
+    if (logo) { const ls = 64; x.save(); roundRect(x, pad, headH / 2 - ls / 2, ls, ls, 18); x.clip(); x.drawImage(logo, pad, headH / 2 - ls / 2, ls, ls); x.restore(); bx = pad + 64 + 18; }
+    x.fillStyle = "#ffc3d1"; x.font = `800 38px ${font}`; x.fillText("해묘", bx, headH / 2 + 2);
+    const bw = x.measureText("해묘").width; x.fillStyle = "rgba(255,217,194,.8)"; x.font = `600 30px ${font}`; x.fillText(" 解猫", bx + bw, headH / 2 + 4);
     if (N > 1) {
-      const t = `${i + 1} / ${N}`; x.font = `700 24px ${font}`; const tw = x.measureText(t).width + 36;
-      x.fillStyle = "rgba(255,255,255,.12)"; roundRect(x, W - pad - tw, headH / 2 - 20, tw, 40, 20); x.fill();
+      const t = `${i + 1} / ${N}`; x.font = `700 32px ${font}`; const tw = x.measureText(t).width + 48;
+      x.fillStyle = "rgba(255,255,255,.12)"; roundRect(x, W - pad - tw, headH / 2 - 27, tw, 54, 27); x.fill();
       x.fillStyle = "#ffe3d8"; x.textAlign = "center"; x.fillText(t, W - pad - tw / 2, headH / 2 + 2);
     }
-    x.strokeStyle = "rgba(255,225,236,.22)"; x.lineWidth = 2; x.beginPath(); x.moveTo(pad, headH); x.lineTo(W - pad, headH); x.stroke();
+    x.strokeStyle = "rgba(255,225,236,.22)"; x.lineWidth = 3; x.beginPath(); x.moveTo(pad, headH); x.lineTo(W - pad, headH); x.stroke();
     // 본문 조각
     // 본문이 짧은 장은 위아래 가운데에 (빈 공간이 한쪽에 몰리지 않게)
     const dh = Math.round(h * s), area = H - frame;
@@ -712,12 +720,14 @@ export async function nodeToPngPages(node) {
     // 아래띠
     x.textAlign = "center"; x.textBaseline = "middle";
     if (i < N - 1) {
-      const t = split ? "다음 장에 이어져요  →" : "다음 장  →"; x.font = `700 24px ${font}`; const tw = x.measureText(t).width + 44;
-      x.fillStyle = "rgba(255,195,209,.16)"; roundRect(x, (W - tw) / 2, H - footH / 2 - 22, tw, 44, 22); x.fill();
+      const t = split ? "다음 장에 이어져요  →" : "다음 장  →"; x.font = `700 32px ${font}`; const tw = x.measureText(t).width + 60;
+      x.fillStyle = "rgba(255,195,209,.16)"; roundRect(x, (W - tw) / 2, H - footH / 2 - 29, tw, 58, 29); x.fill();
       x.fillStyle = "#ffd9c2"; x.fillText(t, W / 2, H - footH / 2);
     } else {
+      x.fillStyle = "#ffc3d1"; x.font = `700 28px ${font}`;
+      x.fillText("🐾 luminahae.github.io/haemyo", W / 2, H - footH / 2 - 16);
       x.fillStyle = "rgba(255,235,242,.55)"; x.font = `600 22px ${font}`;
-      x.fillText("재미와 자기 이해를 위한 참고용 풀이예요", W / 2, H - footH / 2);
+      x.fillText("재미와 자기 이해를 위한 참고용 풀이예요", W / 2, H - footH / 2 + 22);
     }
     out.push(await new Promise((r) => c.toBlob(r, "image/png")));
   }
@@ -896,6 +906,7 @@ function openSheet(root, baseName) {
     sheet.querySelectorAll(".dl-opt").forEach((b) => { b.disabled = true; });
     preview.textContent = ""; status.className = "dl-status";
     status.textContent = kind === "pdf" ? "PDF 만드는 중… (긴 리포트는 몇 초 걸려요)" : kind === "story" ? "스토리 이미지 만드는 중…" : "이미지 만드는 중…";
+    status.classList.add("busy"); // 🐱 털실 굴리는 고양이 (CSS)
     const stamp = new Date(); const ds = `${stamp.getFullYear()}${String(stamp.getMonth() + 1).padStart(2, "0")}${String(stamp.getDate()).padStart(2, "0")}`;
     const filename = `${baseName}${kind === "story" ? "-스토리" : ""}-${ds}.${kind === "pdf" ? "pdf" : "png"}`;
     let blob;

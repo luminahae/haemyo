@@ -6,8 +6,8 @@ import { computeSaju } from "../saju/manse.js";
 import { analyzeStrength } from "../saju/strength.js";
 import { tenGod } from "../saju/fortune.js";
 import { analyzeCompat } from "../saju/compat.js";
-import { harmonyBetween } from "../saju/relationship.js";
-import { dayNightStyle, cheatIndex } from "../saju/spouse.js";
+import { harmonyBetween } from "../saju/compat.js";
+import { dayNightStyle, cheatIndex } from "../saju/report.js";
 import { isUnlocked, unlock, getCoins, costOf, noCoinToast, notePair } from "../wallet.js";
 /* =========================================================
    궁합 특집 — 관계별 정통 궁합 · 오행 · 일주 동물 · 오늘 · 재물 · 낮져밤이/바람기 · 여행

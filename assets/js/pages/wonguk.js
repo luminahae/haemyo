@@ -13,7 +13,7 @@ import { getMyBirth } from "../state.js";
 import { personSwitch } from "./people.js";
 import { computeSaju } from "../saju/manse.js";
 import { buildWonguk, STAGE_INFO, REL_GUIDE, BRANCH_H, BRANCH_KR, ELEM_KR, sinsal12 } from "../saju/wonguk.js";
-import { relTermKey } from "../utils/glossary.js";
+import { relTermKey } from "../utils/dom.js";
 
 const POS = ["시주", "일주", "월주", "년주"];
 const AGE_KEY = "str.agemode.v1";

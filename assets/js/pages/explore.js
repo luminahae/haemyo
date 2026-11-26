@@ -4,9 +4,9 @@ import { getMyBirth, stash } from "../state.js";
 import { computeSaju } from "../saju/manse.js";
 import { readTopic } from "../saju/topics.js";
 import { taegilMonth } from "../saju/extras.js";
-import { monthlyFlow } from "../saju/relationship.js";
+import { monthlyFlow } from "../saju/compat.js";
 import { tenGod } from "../saju/fortune.js";
-import { datePortrait, idealType, charmSpirits } from "../saju/spouse.js";
+import { datePortrait, idealType, charmSpirits } from "../saju/report.js";
 import { isUnlocked, unlock, getCoins, costOf, noCoinToast } from "../wallet.js";
 import { personSwitch } from "./people.js";
 /* =========================================================

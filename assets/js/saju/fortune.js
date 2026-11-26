@@ -5,6 +5,7 @@
    그때 취할 수 있는 행동으로 서술한다. (믿거나 말거나, 참고용)
    ========================================================= */
 
+import { dailyText } from "./daily.js";
 import { computeSaju } from "./manse.js";
 
 const STEM_ELEM = ["wood", "wood", "fire", "fire", "earth", "earth", "metal", "metal", "water", "water"];
@@ -205,10 +206,11 @@ export function todayFortune(profile, today) {
   const dayGod = tenGod(dIdx, t.pillars.day.stemIdx);
   const g = GROUP[dayGod];
   const luckyElem = RESOURCE[profile.dayMasterElem];
-  const c = TODAY[g];
+  // 문장은 하루 문장 엔진에서 — 십신 10가지 × 3벌, 날짜 · 사람마다 다르게 (예전 5가지 고정 문장은 TODAY에 남겨 둠)
+  const c = dailyText(dayGod, t.pillars.day.stemIdx, t.pillars.day.branchIdx, profile.pillars.day, today) || TODAY[g];
   return {
     date: `${y}.${pad(m)}.${pad(d)}`, iljin: t.pillars.day.gz, iljinH: t.pillars.day.hanja, dayGod,
-    theme: c.theme, love: c.love, work: c.work, money: c.money, advice: c.advice,
+    theme: c.rel ? `${c.theme} ${c.rel}` : c.theme, love: c.love, work: c.work, money: c.money, advice: c.advice, keyword: c.keyword || "",
     luckyColor: ELEM_COLOR[luckyElem], luckyElem: ELEM_KR[luckyElem],
   };
 }

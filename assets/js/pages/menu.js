@@ -7,7 +7,12 @@ import { canSeeLifespan } from "../wallet.js";
    작성: HAE
    ========================================================= */
 export const MENU = [
+  { id: "counsel", title: "상담", em: "🐱", color: "#ffd9a8", items: [
+    { id: "aicounsel", em: "🐱", name: "해묘 AI 상담", blurb: "내 사주 · 타로로 바로 답해요", to: "/ai-consult", isNew: true },
+    { id: "consulthub", em: "🔮", name: "해묘 상담소", blurb: "타로 · 사주 · 연애 상담사에게 묻기", to: "/consult", isNew: true },
+  ] },
   { id: "saju", title: "사주 · 명리", em: "🔮", color: "#ffc3d1", items: [
+    { id: "newyear", em: "🐑", name: "2027 신년운세", blurb: "정미년 총운 · 12달 · 신년 타로", to: "/newyear", isNew: true },
     { id: "special", em: "👑", name: "프리미엄", blurb: "특집 풀이 모아 보기", to: "/special", isNew: true },
     { id: "manual", em: "📘", name: "사주 사용설명서", blurb: "나를 다루는 법", to: "/manual", isNew: true },
     { id: "timeline", em: "🗺️", name: "인생 타임라인", blurb: "10년 운 · 전성기", to: "/timeline", isNew: true },
@@ -17,6 +22,7 @@ export const MENU = [
     { id: "gwimun", em: "👁️", name: "귀문관살", blurb: "예민함·직감", to: "/gwimun", isNew: true },
     { id: "saju", em: "📜", name: "사주 리포트", blurb: "실제 만세력 명식·성향", to: "/saju", my: "saju" },
     { id: "manse", em: "🗓️", name: "만세력", blurb: "생년월일만 넣으면 바로", to: "/manse" },
+    { id: "ilju", em: "📇", name: "60일주 도감", blurb: "나는 무슨 일주? · 무료", to: "/ilju", free: true, isNew: true },
     { id: "wonguk", em: "🧭", name: "사주 원국 한눈에", blurb: "십성·운성·형충회합·신살·대운", to: "/wonguk", isNew: true },
     { id: "fortune", em: "🌙", name: "운세", blurb: "오늘·이달·올해·연애·돈", to: "/fortune" },
     { id: "explore", em: "🎁", name: "테마 운세", blurb: "결혼 시기·솔로 탈출 등", to: "/explore" },
@@ -29,6 +35,9 @@ export const MENU = [
   { id: "tarot", title: "타로 · 점", em: "🃏", color: "#ffd0b0", items: [
     { id: "tarot", em: "🃏", name: "타로", blurb: "고양이 카드 78장", to: "/tarot" },
     { id: "tarot-today", em: "☀️", name: "오늘의 한 마디", blurb: "카드 한 장 · 무료", to: "/fortune/tarot/today", free: true },
+    { id: "weektarot", em: "🗓️", name: "이번 주 타로", blurb: "요일마다 한 장 · 무료", to: "/week-tarot", free: true, isNew: true },
+    { id: "tarotdict", em: "📖", name: "타로 카드 사전", blurb: "78장 뜻 한눈에 · 무료", to: "/tarot-dict", free: true, isNew: true },
+    { id: "tarotlog", em: "📒", name: "타로 기록장", blurb: "내 타로 적중률 · 무료", to: "/tarot-log", free: true, isNew: true },
     { id: "oracle", em: "🐾", name: "쓸데없는 고민", blurb: "예·아니오 오라클", to: "/oracle" },
     { id: "iching", em: "🪙", name: "주역점", blurb: "동전으로 묻는 64괘", to: "/iching", isNew: true },
     { id: "soyukim", em: "🖐️", name: "소육임", blurb: "지금 이 순간의 답", to: "/so-yukim", isNew: true },
@@ -37,6 +46,7 @@ export const MENU = [
     { id: "dream", em: "💭", name: "꿈해몽", blurb: "무슨 꿈 꿨어? · 무료", to: "/dream", free: true },
   ] },
   { id: "love", title: "연애 · 인연", em: "💗", color: "#ffb3c8", items: [
+    { id: "lovebook", em: "📜", name: "연애 비록(秘錄)", blurb: "11장 인연 리포트 · 속마음 · 인연 드는 달", to: "/love-book", isNew: true },
     { id: "compat", em: "💞", name: "궁합", blurb: "두 사람의 맞물림", to: "/compat" },
     { id: "compatplus", em: "💞", name: "궁합 특집", blurb: "관계별·재물·여행·선물 추천", to: "/compat-plus", isNew: true },
     { id: "reuniondeep", em: "🔁", name: "재회 궁합", blurb: "헤어진 이유 · 다시 만날 때", to: "/reunion-deep", isNew: true },
@@ -70,6 +80,7 @@ export const MENU = [
   ] },
   { id: "fun", title: "재미로 보기", em: "🎈", color: "#d9c4f2", items: [
     { id: "sajutoon", em: "🐱", name: "사주툰", blurb: "나의 하루 4컷 만화", to: "/sajutoon", isNew: true },
+    { id: "pet", em: "🐾", name: "반려동물 궁합", blurb: "우리 아이와 나 · 무료", to: "/pet", free: true, isNew: true },
     { id: "pastlife", em: "⏳", name: "전생 이야기", blurb: "전생의 나·맞는 직업", to: "/pastlife" },
     { id: "palm", em: "✋", name: "손금", blurb: "내 손 보며 따라 보기", to: "/palm", isNew: true },
     { id: "gwansang", em: "🙂", name: "관상", blurb: "사진으로 보는 얼굴", to: "/gwansang" },
@@ -79,6 +90,7 @@ export const MENU = [
   { id: "tools", title: "내 사람 · 도구", em: "👥", color: "#cdd8ff", items: [
     { id: "diary", em: "📔", name: "운세 일기장", blurb: "기분 × 일진 기록 · 무료", to: "/diary", isNew: true },
     { id: "people", em: "👥", name: "내 사람들", blurb: "저장한 친구·귀인 체크", to: "/people" },
+    { id: "familysaju", em: "👨‍👩‍👧", name: "가족 사주 한눈에", blurb: "누가 나를 채워 줄까 · 무료", to: "/family-saju", free: true, isNew: true },
     { id: "ranks", em: "🏆", name: "내 사람 랭킹", blurb: "귀인·결혼운·나 포함 순위", to: "/ranks", isNew: true },
     { id: "calendar", em: "📅", name: "운세 캘린더", blurb: "날짜별 점수·택일", to: "/calendar" },
     { id: "saved", em: "🔖", name: "보관함", blurb: "보관한 풀이 · 저장한 결과", to: "/saved" },

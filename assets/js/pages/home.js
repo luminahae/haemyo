@@ -8,7 +8,7 @@ import { todayLine, loveSoon } from "./special.js";
 import { computeSaju } from "../saju/manse.js";
 import { biorhythm, bioSvg, monthScores } from "../saju/extras.js";
 import { MENU, findItem, iconBtn, shelfCard, visibleItem } from "./menu.js";
-import { premiumSection } from "./premium.js";
+import { premiumSection } from "./special.js";
 import { sijinLabel } from "./sajuInput.js";
 import { reviewShowcase } from "./about.js";
 import { noticeBanner, noticeLive, ymd, holidayOf, eventActive } from "./store.js";
@@ -21,6 +21,11 @@ export function renderHome({ navigate }) {
   // 0) 관리자 공지 — 있으면 맨 위에 (닫으면 그 공지는 다시 안 뜸)
   root.append(homeNotice());
   root.append(homeGifts()); // 🎁 명절 · 기념일 선물 띠
+  { const mo = new Date().getMonth() + 1; if (mo >= 11 || mo <= 2) root.append(el("section", { class: "wrap", style: "margin-bottom: var(--sp-3);" }, [el("button", { type: "button", class: "ny-banner", onclick: () => navigate("/newyear") }, [
+    el("span", { class: "ny-b-ic", "aria-hidden": "true", text: "🐑" }),
+    el("span", { class: "ny-b-tx" }, [el("b", { text: "2027 丁未(정미)년 신년운세 오픈" }), el("small", { text: "총운 · 12달 흐름 · 신년 타로 12장" })]),
+    el("span", { class: "ny-b-go", "aria-hidden": "true", text: "›" }),
+  ])])); } // 🐑 신년 특집 띠 (11월 ~ 2월)
   // 0-0) 특별한 날 — 내 생일 축하 배너 · 오늘 생일인 내 사람
   { const sd = specialDayBanner(navigate); if (sd) root.append(sd); }
   setTimeout(() => { giftQueueCheck().catch(() => {}); }, 900); // 생일 · 명절 · 기념일이면 선물 팝업 (차례대로)
@@ -66,10 +71,12 @@ export function renderHome({ navigate }) {
       el("a", { href: "#/study", text: "📚 사주 공부방" }),
       el("a", { href: "#/reviews", text: "💬 후기 쓰고 코인 10개" }),
       el("a", { href: "#/about", text: "이용 안내" }),
-      el("a", { href: "#/privacy", text: "개인정보" }),
+      el("a", { href: "#/privacy", text: "개인정보처리방침" }),
+      el("a", { href: "#/terms", text: "이용약관" }),
     ]),
     el("p", { class: "tiny muted", text: "좋은 말만 반복하지 않고, 조심할 점까지 함께 알려 드려요. 모든 풀이는 참고용이며, 로그인 없이 쓰는 정보는 이 브라우저 안에만 저장돼요." }),
   ]));
+  maybeOnboarding(navigate);
   return root;
 }
 
@@ -611,4 +618,66 @@ function lifespanEntry(navigate) {
     el("span", { class: "ls-tag", text: "특별 코드" }),
     el("span", { class: "ls-go", "aria-hidden": "true", text: "›" }),
   ]);
+}
+
+/* =========================================================
+   👋 처음 온 사람 안내 — 3장짜리 짧은 소개 (HAE)
+   · 이 기기에서 처음이고 아직 생일을 안 넣었을 때 홈에서 한 번만
+   · 마이 › 이용 안내에서 ‘처음 안내 다시 보기’로 언제든 다시 열 수 있어요
+   ========================================================= */
+const ONB_KEY = "str.onboard.v1";
+const ONB = [
+  { em: "🐾", h: "인생이 묘할 때, 해묘(解猫)", p: "사주(四柱) · 타로 · 오늘의 운세 · 궁합을 무료로 봐요. 좋은 말만 하지 않고, 조심할 점까지 현실적으로 알려 드려요.", tags: ["🔮 사주", "🃏 타로", "🌙 운세", "💗 궁합"] },
+  { em: "🎂", h: "생일 하나면 끝", p: "생년월일만 넣으면 오늘의 운세, 타고난 성격, 올해 흐름, 궁합까지 한 번에 이어져요. 태어난 시간은 몰라도 괜찮아요.", tags: ["로그인 없이 바로", "시간 몰라도 OK"] },
+  { em: "✨", h: "오늘은 뭐부터 볼까요?", p: "매일 출석하면 코인이 쌓이고, 알림을 켜면 아침마다 오늘의 운세가 와요.", cta: true },
+];
+export function openOnboarding(navigate, { force = false } = {}) {
+  try { if (!force && localStorage.getItem(ONB_KEY)) return; localStorage.setItem(ONB_KEY, String(Date.now())); } catch { if (!force) return; }
+  let i = 0;
+  const body = el("div", { class: "onb" });
+  const m = openModal([body], { title: "" });
+  m.card.classList.add("onb-card");
+  const go = (to) => { m.close(); navigate(to); };
+  const paint = () => {
+    const s = ONB[i];
+    body.replaceChildren(...[
+      el("div", { class: "onb-art", "aria-hidden": "true" }, [
+        el("span", { class: "onb-cat", style: 'background-image:url("assets/img/haemyo.webp")' }),
+        el("span", { class: "onb-em", text: s.em }),
+      ]),
+      el("p", { class: "onb-step", text: `${i + 1} / ${ONB.length}` }),
+      el("h2", { class: "onb-h serif", text: s.h }),
+      el("p", { class: "onb-p", text: s.p }),
+      s.tags ? el("div", { class: "onb-tags" }, s.tags.map((t) => el("span", { text: t }))) : null,
+      s.cta ? el("div", { class: "onb-cta" }, [
+        el("button", { type: "button", class: "btn btn-primary btn-block", onclick: () => go("/saju") }, [el("span", { text: "🎂 생일 넣고 내 운세 보기" })]),
+        el("button", { type: "button", class: "btn btn-ghost btn-block", onclick: () => go("/tarot") }, [el("span", { text: "🃏 타로 한 장 뽑아 보기" })]),
+        el("button", { type: "button", class: "btn btn-quiet btn-block", onclick: () => m.close() }, [el("span", { text: "먼저 둘러볼게요" })]),
+      ]) : null,
+      el("div", { class: "onb-foot" }, [
+        el("div", { class: "onb-dots", role: "tablist", "aria-label": "안내 순서" }, ONB.map((_, k) => el("button", { type: "button", role: "tab", "aria-selected": String(k === i), "aria-label": `${k + 1}번째 안내`, class: "onb-dot" + (k === i ? " on" : ""), onclick: () => { i = k; paint(); } }))),
+        s.cta ? el("span", {}) : el("div", { class: "onb-nav" }, [
+          el("button", { type: "button", class: "btn btn-quiet btn-sm", onclick: () => m.close() }, [el("span", { text: "건너뛰기" })]),
+          el("button", { type: "button", class: "btn btn-primary btn-sm", onclick: () => { i += 1; paint(); } }, [el("span", { text: "다음" })]),
+        ]),
+      ]),
+    ].filter(Boolean));
+  };
+  // 옆으로 밀어서 넘기기
+  let sx = null;
+  body.addEventListener("touchstart", (e) => { sx = e.touches[0].clientX; }, { passive: true });
+  body.addEventListener("touchend", (e) => {
+    if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null;
+    if (Math.abs(dx) < 50) return;
+    const ni = Math.max(0, Math.min(ONB.length - 1, i + (dx < 0 ? 1 : -1))); if (ni !== i) { i = ni; paint(); }
+  }, { passive: true });
+  paint();
+}
+function maybeOnboarding(navigate) {
+  setTimeout(() => {
+    try { if (localStorage.getItem(ONB_KEY)) return; } catch { return; }
+    if (getMyBirth()) { try { localStorage.setItem(ONB_KEY, "had-birth"); } catch { /* ignore */ } return; } // 이미 쓰던 사람은 안 띄움
+    if ((location.hash.replace(/^#/, "") || "/") !== "/" || document.querySelector(".popup-ov, .bd-ov")) return;
+    openOnboarding(navigate);
+  }, 700);
 }

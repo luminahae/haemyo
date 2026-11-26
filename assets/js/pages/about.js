@@ -1,5 +1,5 @@
 import { el, icon, clear, toast } from "../utils/dom.js";
-import { pageHeader, backLink, noticeBox, loadDisclaimer, formatDate } from "./shared.js";
+import { pageHeader, backLink, noticeBox, loadDisclaimer, formatDate, CAT_SVG } from "./shared.js";
 import { grantOnce, isAdmin } from "../wallet.js";
 import { getReviews, hasWrittenReview, submitReview, deleteReview } from "../state.js";
 import { isCloudEnabled, getUser as getCloudUser, adminListUsers, cloudAddReview, cloudListReviews, cloudDeleteReview, sendInquiry, myInquiries, adminInquiries, adminReplyInquiry, deleteInquiry } from "../cloud.js";
@@ -7,6 +7,9 @@ export function renderAbout({ navigate }) {
   const root = el("div", {});
   root.append(el("div", { class: "wrap", style: "margin-bottom: var(--sp-3);" }, [backLink(navigate, "/", "홈")]));
   root.append(pageHeader("ABOUT", "이용 안내 · 도움말", "사용 방법, 자주 묻는 질문, 결과를 읽는 법과 면책 안내예요."));
+  root.append(el("div", { class: "wrap", style: "margin-bottom: var(--sp-3);" }, [
+    el("button", { type: "button", class: "btn btn-ghost btn-sm", onclick: () => import("./home.js").then((m) => m.openOnboarding(navigate, { force: true })) }, [el("span", { text: "👋 처음 안내 다시 보기" })]),
+  ]));
 
   const body = el("div", { class: "wrap section-gap" });
   root.append(body);
@@ -50,11 +53,12 @@ export function renderAbout({ navigate }) {
     body.append(
       el("div", { class: "panel section-gap" }, [
         el("h3", { text: "이번 버전에서 제공하지 않는 것" }),
-        el("ul", {}, ["코인 충전 결제", "푸시 알림"].map((t) => el("li", { text: t }))),
+        el("ul", {}, ["코인 충전 결제"].map((t) => el("li", { text: t }))),
         el("p", { class: "tiny muted", text: "타로·무료 운세는 로그인 없이, 사주·궁합처럼 내 정보를 저장하는 풀이는 Google·이메일 로그인 후 이용할 수 있어요." }),
       ]),
       el("div", { class: "btn-row", style: "margin-top: var(--sp-4);" }, [
-        el("a", { href: "#/privacy", class: "btn btn-ghost btn-sm", text: "개인정보 처리 안내" }),
+        el("a", { href: "#/privacy", class: "btn btn-ghost btn-sm", text: "개인정보처리방침" }),
+        el("a", { href: "#/terms", class: "btn btn-ghost btn-sm", text: "이용약관" }),
         el("a", { href: "#/", class: "btn btn-quiet btn-sm", text: "홈으로" }),
       ]),
     );
@@ -72,42 +76,153 @@ function card(title, paras) {
 
 /* ---- 개인정보 (합침) ---- */
 
-export function renderPrivacy({ navigate }) {
-  const root = el("div", {});
-  root.append(el("div", { class: "wrap", style: "margin-bottom: var(--sp-3);" }, [backLink(navigate, "/", "홈")]));
-  root.append(pageHeader("PRIVACY", "개인정보 처리 안내", "무엇을, 어디에, 왜 저장하는지 투명하게 안내합니다."));
+/* ---- 📜 개인정보처리방침 · 이용약관 (HAE) ---- */
+const LEGAL_DATE = "2026년 11월 20일";
+function legalSec(n, title, items) {
+  return el("section", { class: "panel section-gap lg-sec" }, [
+    el("h3", { text: `제${n}조 ${title}` }),
+    ...items.map((t) => Array.isArray(t)
+      ? el("ul", { class: "lg-ul" }, t.map((x) => el("li", { text: x })))
+      : el("p", { class: "muted", text: t })),
+  ]);
+}
+function legalTable(rows) {
+  return el("div", { class: "lg-tbl", role: "table" }, rows.map((r, i) => el("div", { class: "lg-tr" + (i ? "" : " lg-th"), role: "row" }, r.map((c) => el("span", { role: i ? "cell" : "columnheader", text: c })))));
+}
+function legalTabs(navigate, now) {
+  return el("div", { class: "wrap lg-tabs", role: "tablist" }, [["/privacy", "개인정보처리방침"], ["/terms", "이용약관"]].map(([p, t]) =>
+    el("button", { type: "button", role: "tab", "aria-selected": String(p === now), class: "chip" + (p === now ? " on" : ""), onclick: () => navigate(p) }, [el("span", { text: t })])));
+}
 
+export function renderPrivacy({ navigate }) {
+  const root = el("div", { class: "lg" });
+  root.append(el("div", { class: "wrap", style: "margin-bottom: var(--sp-3);" }, [backLink(navigate, "/", "홈")]));
+  root.append(pageHeader("PRIVACY", "개인정보처리방침", `해묘(解猫)가 어떤 정보를, 왜, 얼마 동안 다루는지 알려 드려요. 시행일 ${LEGAL_DATE}`));
+  root.append(legalTabs(navigate, "/privacy"));
   const body = el("div", { class: "wrap section-gap" });
   root.append(body);
+  body.append(
+    el("div", { class: "panel panel-gold section-gap" }, [
+      el("h3", { text: "한눈에 보기" }),
+      el("ul", { class: "lg-ul" }, [
+        "생년월일은 풀이 계산에만 써요. 광고·판매·제3자 제공은 하지 않아요.",
+        "로그인 전 정보는 이 브라우저에만 저장돼요.",
+        "건강 · 수술 풀이에 넣은 내용과 반려동물 정보는 서버에 보내지 않아요 (이 기기에만).",
+        "탈퇴하면 7일, 최대 30일 뒤 자동으로 모두 지워져요.",
+      ].map((t) => el("li", { text: t }))),
+    ]),
+    legalSec(1, "수집하는 개인정보와 이용 목적", [
+      "해묘는 서비스를 제공하는 데 꼭 필요한 정보만 받아요.",
+    ]),
+  );
+  body.lastChild.append(legalTable([
+    ["구분", "항목", "이용 목적"],
+    ["회원 가입 · 로그인", "이메일, 닉네임, Google 계정 식별값(이름·프로필 사진 포함 가능)", "본인 확인, 계정 관리, 다른 기기 이어보기"],
+    ["풀이 계산", "생년월일, 양력/음력, 태어난 시간(선택), 성별, 이름(선택)", "사주 · 운세 · 궁합 계산과 결과 표시"],
+    ["내 사람", "내가 입력한 가족 · 친구의 이름(별명)과 생년월일", "궁합 · 가족 사주 등 관계 풀이"],
+    ["알림(선택)", "기기 알림 토큰, 받을 시간, 알림 종류, 생일(월·일)", "오늘의 운세 · 생일 · 명절 알림 보내기"],
+    ["후기 · 1:1 문의", "작성 내용, 닉네임(익명 선택 가능), 작성 시각", "후기 게시, 문의 답변"],
+    ["상담소(선택)", "상담 제목 · 내용, 함께 보낸 생년월일(나 · 고른 사람), 주고받은 답변", "상담사 답변, 답변 도착 알림"],
+    ["AI 상담(선택)", "질문 내용, 사주 요약(태어난 해 · 사주 여덟 글자 · 오행), 뽑은 타로 카드", "AI 답변 만들기 — 대화 기록은 서버에 남기지 않고 이 기기에만 저장"],
+    ["이용 기록", "코인 내역, 열어 본 풀이, 접속 시각, 출석 기록", "코인 지급 · 오류 확인, 부정 이용 방지"],
+  ]));
+  body.append(
+    legalSec(2, "기기에만 저장하는 정보", [[
+      "건강 · 수술 시기 풀이에 입력한 내용 — 서버로 보내지 않고 화면에서만 계산해요.",
+      "반려동물 이름 · 생일 — 이 브라우저(localStorage)에만 저장돼요.",
+      "로그인 전 내 정보 · 보관함 — 이 브라우저에만 저장되며, 브라우저 데이터를 지우면 함께 사라져요.",
+    ]]),
+    legalSec(3, "보유 및 이용 기간", [[
+      "회원 정보 · 풀이 기록: 회원 탈퇴 시까지",
+      "탈퇴 후: 실수로 인한 복구 요청에 대비해 7일, 최대 30일 보관 뒤 자동 삭제",
+      "열어 본 풀이 기록: 7일 (보관함에 저장한 풀이는 직접 지울 때까지)",
+      "알림 정보: 알림을 끄거나 탈퇴하면 바로 삭제",
+      "게스트 계정: 게스트를 끝내거나 관리자가 정리할 때 삭제",
+    ], "단, 관계 법령에 따라 보관해야 하는 정보가 생기면 그 기간 동안만 따로 보관해요."]),
+    legalSec(4, "제3자 제공", ["해묘는 이용자의 개인정보를 제3자에게 제공하지 않아요. 법령에 따라 수사기관 등이 적법한 절차로 요청하는 경우만 예외예요."]),
+    legalSec(5, "처리 위탁 및 국외 이전", ["안정적인 서비스를 위해 아래 업체의 서버를 이용해요. 이 서버들은 해외에 있을 수 있어요."]),
+  );
+  body.lastChild.append(legalTable([
+    ["받는 곳", "맡기는 일", "이전 항목 · 방법"],
+    ["Google LLC (Firebase — Authentication, Cloud Firestore, Cloud Messaging)", "로그인, 데이터 저장, 알림 보내기", "제1조의 회원 정보 · 풀이 정보 · 알림 토큰 / 서비스 이용 시 네트워크로 전송"],
+    ["Google LLC (Gemini · Firebase AI Logic)", "AI 상담 답변 만들기", "AI 상담을 쓸 때만 질문 · 사주 요약 / 네트워크로 전송 (Google 정책에 따라 처리)"],
+    ["GitHub, Inc. (GitHub Pages · Actions)", "웹사이트 제공, 정해진 시각 알림 발송 실행", "접속 기록(IP 등, GitHub 정책에 따름), 알림 발송 시 알림 정보 / 네트워크 전송"],
+  ]));
+  body.lastChild.append(el("p", { class: "tiny muted", style: "margin-top:8px;", text: "보유 기간은 제3조와 같아요. 국외 이전을 원하지 않으면 로그인하지 않고(이 기기 저장만) 이용하거나 탈퇴할 수 있어요. 단, 이 경우 다른 기기 이어보기 · 알림은 쓸 수 없어요." }));
+  body.append(
+    legalSec(6, "파기 절차와 방법", ["보유 기간이 끝나거나 탈퇴 유예 기간이 지나면 데이터베이스에서 복구할 수 없게 지워요. 출력물은 만들지 않아요."]),
+    legalSec(7, "이용자의 권리와 행사 방법", [[
+      "마이 › 내 정보에서 언제든 보기 · 고치기",
+      "마이 › 보관함에서 풀이 지우기, 마이 › 알림에서 알림 끄기",
+      "마이 › 계정 관리 › 회원 탈퇴로 처리 정지 · 전체 삭제",
+      "그 밖의 열람 · 정정 · 삭제 · 처리 정지 요청은 1:1 문의로 — 지체 없이 처리해요.",
+    ]]),
+    legalSec(8, "만 14세 미만 아동", ["해묘는 만 14세 이상을 위한 서비스예요. 만 14세 미만은 가입하지 말아 주세요. 미만임이 확인되면 법정대리인 동의가 없는 정보는 지체 없이 삭제해요."]),
+    legalSec(9, "안전성 확보 조치", [[
+      "모든 통신은 HTTPS로 암호화돼요.",
+      "데이터베이스 보안 규칙으로 본인 데이터는 본인(과 문의 확인을 위한 관리자)만 읽고 쓸 수 있어요.",
+      "비밀번호는 Google Firebase가 관리하며 해묘는 비밀번호를 볼 수 없어요.",
+      "알림 발송용 서버 키는 공개 저장소가 아닌 비공개 보관소(Secrets)에만 둬요.",
+    ]]),
+    legalSec(10, "자동 수집 장치(쿠키 등)", ["해묘는 광고 · 분석용 쿠키를 쓰지 않아요. 로그인 유지와 설정 저장을 위해 브라우저 저장소(localStorage · IndexedDB)를 써요. 브라우저 설정에서 지울 수 있지만, 지우면 로그인 전 정보가 사라져요."]),
+    legalSec(11, "개인정보 보호책임자", ["해묘 운영자 (HAE) — 개인정보 관련 문의 · 불만 · 피해 구제는 앱의 1:1 문의로 보내 주세요. 빠르게 답변드려요."]),
+  );
+  body.lastChild.append(el("a", { href: "#/inquiry", class: "btn btn-ghost btn-sm", style: "margin-top:8px;", text: "1:1 문의하기" }));
+  body.append(
+    legalSec(12, "권익 침해 구제 방법", ["개인정보 침해로 도움이 필요하면 아래 기관에 문의할 수 있어요.", [
+      "개인정보분쟁조정위원회 1833-6972 (kopico.go.kr)",
+      "개인정보침해신고센터 118 (privacy.kisa.or.kr)",
+      "대검찰청 1301 (spo.go.kr)",
+      "경찰청 182 (ecrm.police.go.kr)",
+    ]]),
+    legalSec(13, "공유 이미지", ["공유 · 저장 이미지에는 생년월일 전체를 기본으로 넣지 않아요 (예: ‘1994년생 · 닉네임’). 공유한 이미지는 받은 사람에게 남으니 신중히 공유해 주세요."]),
+    legalSec(14, "방침의 변경", [`이 방침은 ${LEGAL_DATE}부터 시행해요. 내용이 바뀌면 시행 7일 전(중요한 변경은 30일 전)에 공지로 알려 드려요.`]),
+  );
+  return root;
+}
 
-  loadDisclaimer().then((d) => {
-    body.append(
-      el("div", { class: "panel section-gap" }, [
-        el("div", { style: "display:flex; gap:10px; align-items:center; color:var(--c-gold);" }, [icon("shield"), el("h3", { style: "color:var(--c-text);", text: "핵심 원칙" })]),
-        el("ul", { style: "display:grid; gap:10px;" }, d.privacy.map((t) => el("li", { text: t }))),
-      ]),
-      el("div", { class: "panel section-gap" }, [
-        el("h3", { text: "어떤 정보를 다루나요?" }),
-        kv("생년월일 · 출생 시간", "성향 계산에만 사용해요. 로그인한 경우 기기 간 이어보기를 위해 내 계정(Firebase 클라우드)에 저장되며, 본인과 (문의·오류 확인이 필요할 때) 관리자만 볼 수 있어요."),
-        kv("이름/닉네임 · 이메일", "닉네임은 결과 표시와 공유 이미지에, 이메일은 로그인에만 사용해요. 닉네임은 실명이 아니어도 돼요."),
-        kv("열어 본 풀이 · 보관함", "열어 본 풀이는 7일 동안, 보관한 풀이는 계속 내 계정에 남아요. 마이 › 보관함에서 지우거나, 회원 탈퇴로 계정과 함께 모두 삭제할 수 있어요 (탈퇴 후 7일, 최대 30일 보관 뒤 자동 삭제)."),
-        kv("탈퇴 · 삭제 후 보관", "개인정보는 탈퇴 후 7일, 최대 30일간 보관되다 자동으로 삭제돼요."),
-        kv("실수로 삭제한 계정 복구", "실수로 삭제한 계정은 삭제 후 7일 안에 1:1 문의로 요청하면 복구할 수 있어요. 7일이 지나면 정보가 완전히 지워져 복구할 수 없어요."),
-        kv("관리자 열람", "관리자는 고객 문의·코인 오류 확인을 위해 필요시 열람 기록(언제, 코인 사용 여부 등)을 볼 수 있어요."),
-        kv("후기 · 1:1 문의", "후기는 모든 이용자에게 공개돼요. ‘익명으로 올리기’를 고르거나 닉네임을 비우면 닉네임·계정 이름이 보이지 않아요. 1:1 문의는 나와 관리자만 볼 수 있어요."),
-      ]),
-      el("div", { class: "panel section-gap" }, [
-        el("h3", { text: "공유 이미지와 개인정보" }),
-        el("p", { class: "muted", text: "공유용 이미지에는 생년월일 전체가 기본적으로 표시되지 않습니다. 예: ‘1994년생 · 출생 시간 미공개 · 닉네임만 표시’ 형태로 노출됩니다." }),
-      ]),
-      el("div", { class: "panel section-gap" }, [
-        el("h3", { text: "데이터 삭제" }),
-        el("p", { class: "muted", text: "마이 › 보관함에서 보관한 풀이를 바로 지울 수 있어요. 계정까지 지우려면 마이 › 계정 관리 › 회원 탈퇴를 누르면 클라우드에 저장된 내 정보도 7일, 최대 30일간 보관되다 자동으로 삭제돼요." }),
-        el("a", { href: "#/saved", class: "btn btn-ghost btn-sm", style: "margin-top: var(--sp-2);", text: "마이 › 보관함으로 이동" }),
-      ]),
-    );
-  });
-
+export function renderTerms({ navigate }) {
+  const root = el("div", { class: "lg" });
+  root.append(el("div", { class: "wrap", style: "margin-bottom: var(--sp-3);" }, [backLink(navigate, "/", "홈")]));
+  root.append(pageHeader("TERMS", "이용약관", `해묘(解猫)를 쓰기 전에 알아 두면 좋은 약속이에요. 시행일 ${LEGAL_DATE}`));
+  root.append(legalTabs(navigate, "/terms"));
+  const body = el("div", { class: "wrap section-gap" });
+  root.append(body);
+  body.append(
+    legalSec(1, "목적", ["이 약관은 해묘(이하 ‘서비스’)를 이용할 때 운영자(HAE)와 이용자 사이의 권리 · 의무와 책임을 정해요."]),
+    legalSec(2, "서비스 내용", ["사주(四柱) · 타로 · 운세 · 궁합 · 꿈풀이 등 자기이해와 재미를 위한 풀이 콘텐츠, 보관함, 알림 등을 무료로 제공해요."]),
+    legalSec(3, "풀이 결과의 성격", [[
+      "모든 풀이는 전통 명리 · 타로 해석을 바탕으로 만든 참고용 · 오락용 콘텐츠예요.",
+      "의료 · 법률 · 투자 · 진학 등 중요한 결정을 대신하지 않아요. 건강 · 수술 관련 풀이는 진단이 아니며, 반드시 의료진의 판단을 따라 주세요.",
+      "풀이를 근거로 한 결정과 그 결과의 책임은 이용자에게 있어요.",
+    ]]),
+    legalSec(4, "회원 가입과 계정", [[
+      "만 14세 이상이면 Google · 이메일 · 게스트로 가입할 수 있어요.",
+      "계정 정보는 본인이 관리해야 하며, 남에게 빌려주거나 넘길 수 없어요.",
+      "언제든 마이 › 회원 탈퇴로 그만둘 수 있어요.",
+    ]]),
+    legalSec(5, "코인", [[
+      "코인은 출석 · 후기 · 이벤트 · 쿠폰으로 무료로 받는 서비스 안 포인트예요. 현재 돈으로 사고팔 수 없어요.",
+      "코인은 현금으로 바꾸거나 환불할 수 없고, 다른 계정에 넘길 수 없어요.",
+      "오류 · 중복 지급 · 부정한 방법(여러 계정, 자동화 등)으로 받은 코인은 회수할 수 있어요.",
+      "탈퇴하면 남은 코인은 사라져요. 서비스를 종료할 때는 미리 공지해요.",
+    ]]),
+    legalSec(6, "이용자의 의무", ["이용자는 다음 행동을 하면 안 돼요.", [
+      "다른 사람의 정보를 동의 없이 입력하거나 공유하는 일",
+      "욕설 · 비방 · 광고 · 개인정보가 담긴 후기 · 문의",
+      "서비스를 해킹 · 자동화 · 과도한 요청으로 방해하는 일",
+      "풀이 콘텐츠를 허락 없이 대량으로 복제 · 판매하는 일",
+    ], "위반하면 게시물 삭제, 코인 회수, 이용 제한을 할 수 있어요."]),
+    legalSec(7, "게시물(후기)", ["후기는 모든 이용자에게 공개돼요. 작성자는 언제든 지울 수 있고, 제6조를 어긴 후기는 운영자가 알림 없이 숨기거나 지울 수 있어요. 해묘는 후기를 서비스 안에서 보여 주는 데만 써요."]),
+    legalSec(8, "서비스의 변경 · 중단", ["더 나은 서비스를 위해 메뉴 · 풀이 · 코인 가격을 바꾸거나, 점검 · 장애 · 외부 서비스(Google Firebase · GitHub) 사정으로 잠시 멈출 수 있어요. 중요한 변경은 공지로 미리 알려 드려요."]),
+    legalSec(9, "책임의 한계", ["해묘는 무료 서비스로, 천재지변 · 외부 서비스 장애 · 이용자 기기 문제로 생긴 손해나 풀이 내용을 믿고 한 행동의 결과에 대해 법이 허용하는 범위에서 책임지지 않아요. 단, 운영자의 고의 · 중대한 과실로 생긴 손해는 예외예요."]),
+    legalSec(10, "약관의 변경", [`이 약관은 ${LEGAL_DATE}부터 시행해요. 바뀌면 시행 7일 전(이용자에게 불리하면 30일 전)부터 공지해요. 바뀐 약관에 동의하지 않으면 탈퇴할 수 있어요.`]),
+    legalSec(11, "준거법 · 분쟁 해결", ["이 약관은 대한민국 법을 따르며, 분쟁이 생기면 먼저 1:1 문의로 원만히 해결하도록 노력해요. 해결되지 않으면 민사소송법에 따른 관할 법원에서 다퉈요."]),
+  );
+  body.append(el("div", { class: "btn-row", style: "margin-top: var(--sp-4);" }, [
+    el("a", { href: "#/privacy", class: "btn btn-ghost btn-sm", text: "개인정보처리방침 보기" }),
+    el("a", { href: "#/inquiry", class: "btn btn-quiet btn-sm", text: "1:1 문의" }),
+  ]));
   return root;
 }
 
@@ -122,7 +237,7 @@ function kv(k, v) {
 
 export function renderNotFound({ navigate }) {
   return el("div", { class: "wrap center", style: "padding-top: var(--sp-7);" }, [
-    el("div", { class: "loader-orbit", style: "margin: 0 auto var(--sp-5);" }, [el("span", { class: "loader-dot" })]),
+    (() => { const c = el("div", { class: "cat-load cat-lost", style: "margin: 0 auto var(--sp-4);", "aria-hidden": "true" }); c.innerHTML = CAT_SVG; return c; })(),
     el("h1", { class: "serif", style: "font-size: var(--fs-hero);", text: "404" }),
     el("p", { class: "muted", style: "margin-top: var(--sp-2);", text: "요청하신 화면을 찾을 수 없어요. 주소가 바뀌었거나 사라진 페이지일 수 있습니다." }),
     el("div", { class: "btn-row", style: "justify-content:center; margin-top: var(--sp-5);" }, [

@@ -269,7 +269,6 @@ import { clear, toast } from "../utils/dom.js";
 
 import { computeSaju } from "../saju/manse.js";
 
-import { myeongsikCard } from "./sajuResult.js";
 /* =========================================================
    만세력 바로 보기 (내 정보 저장 없이) + 출생 시진(자·축·인·묘…) 도우미
    - sijinPicker: 시간 입력 아래 12시진 칩 + "오후 2:30 · 미시(未時)" 표시
@@ -455,7 +454,7 @@ export function renderManse({ navigate }) {
         ["음력", l ? `${l.year}.${p2(l.month)}.${p2(l.day)}${l.isLeap ? " (윤달)" : ""}` : "-"],
         ["출생 시간", sijinLabel(input)],
       ].map(([k, v]) => el("span", {}, [document.createTextNode(k + " "), el("b", { text: v })]))),
-      myeongsikCard(profile, input),
+      (() => { const slot = el("div", { class: "ms-slot" }); import("./sajuResult.js").then((m) => slot.replaceWith(m.myeongsikCard(profile, input))).catch(() => { slot.textContent = "명식을 불러오지 못했어요. 새로고침해 주세요."; }); return slot; })(),
       el("div", { class: "btn-row", style: "margin-top: var(--sp-4); flex-wrap:wrap;" }, [
         el("button", { class: "btn btn-primary", onclick: () => { saveDraft(input); saveMyBirth(input); navigate("/saju"); } }, [el("span", { text: "이 정보로 사주 리포트 보기" })]),
         el("button", { class: "btn btn-ghost", onclick: () => { saveMyBirth(input); toast("내 정보로 저장했어요. 다음부턴 자동으로 채워져요."); } }, [el("span", { text: "내 정보로 저장" })]),

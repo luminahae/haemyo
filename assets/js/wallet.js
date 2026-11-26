@@ -19,7 +19,7 @@ export const COIN_PRICE_KRW = 500;
 export const COIN_COST = {
   // ── 가벼운 (1코인) ─────────────────
   today: 1, tomorrow: 1, tomorrowlove: 1, weekday: 1, weekend: 1, todaylove: 1, biorhythm: 0, luckycard: 1, charmtoday: 1, taegil: 1,
-  dayfortune: 1, iching: 0, oracle: 0, bujeok: 1, sajumbti: 1, palm: 2, studyluck: 2, dohwa: 2, gwimun: 2, lovecount: 2, nomarry: 2, children: 2, completeme: 2, fate3: 3, rich: 3, bizjob: 3, moneytime: 3, luck12: 3, sal_yangin: 2, sal_goegang: 2, sal_baekho: 2, sal_hyeonchim: 2, sal_gongmang: 2, sal_gosin: 2, sal_cheonra: 2, sal_samjae: 2, sal_munchang: 2, sal_cheondeok: 2, sal_geupgak: 2, sal_amrok: 2, sal_geumyeo: 2, sal_gilsin: 3, sal_gwiti: 2, love10: 3, blueprint: 5, spouseluck: 3, story: 2, manual: 0, timeline: 3, soyukim: 0, astrodice: 0, lottoagain: 1, gaeun: 2, sajutoon: 2, healthsaju: 2, hwagae: 2, yeokma: 2, reunioncompat: 3, naming: 10, namefix: 10, daeundetail: 1, daeunall: 5, tojeongplus: 3, cpclassic: 2, cpelem: 2, cpanimal: 2, cpmoney: 2, cpnight: 2, cptravel: 2, cpeco: 2, cpif: 2, cpgift: 2, rankself: 2, rankall: 10,     // 만세력·캘린더 하루 상세 (당일 무료)
+  newyear: 2, dayfortune: 1, iching: 0, oracle: 0, bujeok: 1, sajumbti: 1, palm: 2, studyluck: 2, dohwa: 2, gwimun: 2, lovecount: 2, nomarry: 2, children: 2, completeme: 2, fate3: 3, rich: 3, bizjob: 3, moneytime: 3, luck12: 3, sal_yangin: 2, sal_goegang: 2, sal_baekho: 2, sal_hyeonchim: 2, sal_gongmang: 2, sal_gosin: 2, sal_cheonra: 2, sal_samjae: 2, sal_munchang: 2, sal_cheondeok: 2, sal_geupgak: 2, sal_amrok: 2, sal_geumyeo: 2, sal_gilsin: 3, sal_gwiti: 2, love10: 3, blueprint: 5, spouseluck: 3, story: 2, manual: 0, timeline: 3, soyukim: 0, astrodice: 0, lottoagain: 1, gaeun: 2, sajutoon: 2, healthsaju: 2, hwagae: 2, yeokma: 2, reunioncompat: 3, naming: 10, namefix: 10, daeundetail: 1, daeunall: 5, tojeongplus: 3, cpclassic: 2, cpelem: 2, cpanimal: 2, cpmoney: 2, cpnight: 2, cptravel: 2, cpeco: 2, cpif: 2, cpgift: 2, rankself: 2, rankall: 10,     // 만세력·캘린더 하루 상세 (당일 무료)
   job: 2, interview: 2, jobchange: 2, promotion: 2, coworker: 2, startup: 2, windfall: 2, saving: 2, invest: 2, spending: 2, sidejob: 2,
   jobmonth: 3, moneymonth: 3, worktype: 3, moneytype: 3, dday: 3, pastlife: 3, pastlove: 2, ddaylove: 2, ddaymarry: 2, ddaymeet: 2,
   daypreview: 2,      // 운세 캘린더 지정일 미리보기 (이후 24h 내 1코인)
@@ -32,6 +32,7 @@ export const COIN_COST = {
   // ── 묵직·인기 (3코인) ─────────────
   love: 3, pull: 3, yearlove: 3, reunion: 3, breakup: 3, "ziwei-deep": 3, tojeong: 3, tojeonglife: 5, tojeongcompat: 3, tjt_love: 3, tjt_money: 3, tjt_success: 3, tjt_spouse: 3, tjt_fate: 3, tarot: 3, year: 3,
   // ── 나의 인연 (5코인) : 진입 + 초상화 개당 ──
+  lovebook: 15,       // 💌 연애 비록 11장 — 사람(조합)마다 한 번
   inyeon: 5, "spouse-portrait": 5, "portrait-date": 5, "portrait-avoid": 5,
   // ── 종합·고가 (5코인) ─────────────
   compat: 5,
@@ -566,7 +567,7 @@ export function noCoinToast(need) {
 export const OPEN_LABEL = {
   today: "오늘의 운세", tomorrow: "내일의 운세", tomorrowlove: "내일 애정운", weekday: "평일 운세", weekend: "주말 운세", todaylove: "오늘 애정운", luckycard: "행운 카드", charmtoday: "오늘의 매력", taegil: "택일", dayfortune: "날짜별 하루 운세", bujeok: "부적", sajumbti: "사주 MBTI", palm: "손금", studyluck: "공부운",
   dohwa: "도화살", gwimun: "귀문관살", lovecount: "연애 횟수", nomarry: "결혼 안 할 사주", children: "자녀운", completeme: "나를 완성하는 사람", fate3: "운명의 세 사람", rich: "부자가 될까", bizjob: "창업 vs 취업", moneytime: "돈 버는 시기",
-  luck12: "십이운성 신년운세", luck12y: "십이운성 신년운세(연도)", love10: "연애운 10년", blueprint: "인생 설계도", spouseluck: "배우자복", story: "사주 이야기", manual: "사주 사용설명서", timeline: "인생 타임라인", gaeun: "개운법", sajutoon: "사주툰", healthsaju: "건강운", hwagae: "화개살", yeokma: "역마살",
+  newyear: "2027 신년운세", lovebook: "연애 비록", luck12: "십이운성 신년운세", luck12y: "십이운성 신년운세(연도)", love10: "연애운 10년", blueprint: "인생 설계도", spouseluck: "배우자복", story: "사주 이야기", manual: "사주 사용설명서", timeline: "인생 타임라인", gaeun: "개운법", sajutoon: "사주툰", healthsaju: "건강운", hwagae: "화개살", yeokma: "역마살",
   reunioncompat: "재회 궁합", reuniondeep: "헤어진 이유·재회", naming: "작명", namefix: "개명", daeundetail: "대운 상세", daeunall: "대운 전체", tojeongplus: "토정비결 월별·일별", tojeong: "토정비결", tojeonglife: "토정비결 인생", tojeongcompat: "토정비결 궁합", tjcompat: "토정비결 궁합",
   tjt_love: "토정 연애운", tjt_money: "토정 재물운", tjt_success: "토정 성공운", tjt_spouse: "토정 배우자복", tjt_fate: "토정 운명의 사람",
   cpclassic: "궁합 · 정통", cpelem: "궁합 · 오행", cpanimal: "궁합 · 일주동물", cpmoney: "궁합 · 재물", cpnight: "궁합 · 낮져밤이", cptravel: "궁합 · 여행", cpeco: "궁합 · 경제관념", cpif: "궁합 · 만약 연인이라면", cpgift: "궁합 · 선물 추천",
@@ -589,7 +590,7 @@ export function openLabel(id) {
 /* 경로 없이 남은 예전 기록 → 화면 주소 짐작 */
 const ROUTE_OF = {
   rich: "/rich", manual: "/manual", love10: "/love10", blueprint: "/blueprint", spouseluck: "/spouseluck", story: "/story", timeline: "/timeline", gaeun: "/gaeun",
-  sajutoon: "/sajutoon", healthsaju: "/health-saju", hwagae: "/hwagae", yeokma: "/yeokma", dohwa: "/dohwa", gwimun: "/gwimun", lovecount: "/love-count", nomarry: "/no-marry",
+  newyear: "/newyear", lovebook: "/love-book", sajutoon: "/sajutoon", healthsaju: "/health-saju", hwagae: "/hwagae", yeokma: "/yeokma", dohwa: "/dohwa", gwimun: "/gwimun", lovecount: "/love-count", nomarry: "/no-marry",
   children: "/children", completeme: "/complete-me", fate3: "/fate3", bizjob: "/bizjob", moneytime: "/moneytime", luck12: "/luck12", luck12y: "/luck12", naming: "/naming",
   reuniondeep: "/reunion-deep", tojeong: "/tojeong", tojeonglife: "/tojeong", tojeongplus: "/tojeong-plus", tojeongcompat: "/tojeong-compat", tjcompat: "/tojeong-compat",
   tjt_love: "/tojeong-theme/love", tjt_money: "/tojeong-theme/money", tjt_success: "/tojeong-theme/success", tjt_spouse: "/tojeong-theme/spouse", tjt_fate: "/tojeong-theme/fate",

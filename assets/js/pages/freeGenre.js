@@ -5,7 +5,7 @@ import { isMember } from "../app.js";
 import { computeSaju } from "../saju/manse.js";
 import { analyzeStrength } from "../saju/strength.js";
 import { starSign, SIGN_RANGE } from "../saju/extras.js";
-import { godTally } from "../saju/spouse.js";
+import { godTally } from "../saju/report.js";
 import { tenGod } from "../saju/fortune.js";
 import { newMoonJD, sunLongitude, moonLongitude } from "../saju/astro.js";
 import { personSwitch } from "./people.js";

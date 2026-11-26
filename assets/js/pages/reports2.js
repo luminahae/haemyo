@@ -280,7 +280,7 @@ import { copyText, icon } from "../utils/dom.js";
 import { unstash, stash, saveResult, makeId } from "../state.js";
 import { personPicker } from "./people.js";
 import { computeZiwei, STAR_MEANING, PALACE_MEANING, BUREAU_DESC } from "../saju/ziwei.js";
-import { analyzeZiweiDeep, STAR_DEEP, AUX_DEEP } from "../saju/ziweiAnalysis.js";
+import { analyzeZiweiDeep, STAR_DEEP, AUX_DEEP } from "../saju/ziwei.js";
 import { backLink, loadDisclaimer } from "./shared.js";
 import { renderShareCard, downloadBlob, shareImage, maskedProfileLabel } from "../utils/shareImage.js";
 import { chartItemId } from "../wallet.js";

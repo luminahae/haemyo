@@ -1,6 +1,7 @@
 import { el, clear, toast } from "../utils/dom.js";
 import { stash, setAdminView } from "../state.js";
-import { adminInquiries, getNotice, adminSetNotice, getEvents, adminSetEvents } from "../cloud.js";
+import { adminInquiries, getNotice, adminSetNotice, getEvents, adminSetEvents, adminStats, adminErrors, adminDeleteErrors, statKey } from "../cloud.js";
+import { ALL_ITEMS } from "./menu.js";
 import { solarToLunar } from "../saju/astro.js";
 import { adminListUsers, adminUserResults, adminGiftCoins, adminDeleteUser, adminListTrash, adminRestoreUser, adminPurgeUser, adminGiftPending, adminCancelGift, getUser as getCloudUserNow } from "../cloud.js";
 import { pageHeader, backLink, noticeBox } from "./shared.js";
@@ -319,12 +320,12 @@ export function renderAdminUsers({ navigate }) {
   root.insertBefore(adminModeBar(navigate), host);
   const dashHost = el("section", { class: "wrap", style: "margin-bottom: var(--sp-4);" }, [el("div", { class: "panel dash", "data-noterm": "" }, [el("p", { class: "muted tiny", text: "대시보드 불러오는 중…" })])]);
   root.insertBefore(dashHost, host);
+  root.insertBefore(statsPanel(), host);
+  root.insertBefore(errorsPanel(), host);
+  { const slot = el("div"); root.insertBefore(slot, host); import("./consult.js").then((m) => slot.replaceWith(m.consultAdminPanel())).catch(() => {}); }
   root.insertBefore(noticeEditor(), host);
   root.insertBefore(eventsEditor(), host);
-  const glHost = el("div", {});
-  const paintGl = () => { clear(glHost); glHost.append(giftLogCard()); };
-  paintGl(); window.addEventListener("hae-giftlog", paintGl);
-  root.insertBefore(glHost, host);
+  // 🎁 전체 코인 선물 내역은 없앰 — 회원마다 펼쳐서 '이 회원에게 보낸 선물'로 봄 (HAE)
   const trashHost = el("section", { class: "wrap" });
   root.insertBefore(trashHost, host);
   const paintTrash = () => trashBox(trashHost, () => { setTimeout(() => location.reload(), 900); });
@@ -342,6 +343,24 @@ export function renderAdminUsers({ navigate }) {
     const FILTERS = [["all", "전체"], ["member", "회원"], ["guest", "게스트"], ["today", "오늘 가입"], ["quiet", "30일 안 들어옴"]];
     const PAGE = 20;
     let q = "", sortBy = "active", filt = "all", limit = PAGE;
+    // ☑️ 선택 삭제 (HAE)
+    let selMode = false, lastShown = [];
+    const sel = new Set();
+    let meUid = ""; getCloudUserNow().then((u) => { meUid = (u && u.id) || ""; }).catch(() => {});
+    const selBar = el("div", { class: "sel-bar", hidden: true });
+    const paintSelBar = () => {
+      clear(selBar); selBar.hidden = !selMode;
+      if (!selMode) return;
+      const vis = lastShown.filter((u) => u.uid !== meUid);
+      const allOn = vis.length && vis.every((u) => sel.has(u.uid));
+      selBar.append(
+        el("button", { type: "button", class: "sel-all", onclick: () => { if (allOn) vis.forEach((u) => sel.delete(u.uid)); else vis.forEach((u) => sel.add(u.uid)); paint(); } }, [el("span", { text: allOn ? "선택 풀기" : `모두 선택 (${vis.length})` })]),
+        el("b", { class: "sel-n", text: `${sel.size}명 선택` }),
+        el("button", { type: "button", class: "sel-del", disabled: !sel.size, onclick: () => bulkDeleteModal(list.filter((u) => sel.has(u.uid)), "선택한 회원", () => setTimeout(() => location.reload(), 1200)) }, [el("span", { text: "선택 삭제" })]),
+        el("button", { type: "button", class: "sel-x", "aria-label": "선택 그만", onclick: () => { selMode = false; sel.clear(); paint(); } }, [el("span", { text: "✕" })]),
+      );
+    };
+    const selToggle = el("button", { type: "button", class: "sel-toggle", onclick: () => { selMode = !selMode; if (!selMode) sel.clear(); paint(); } }, [el("span", { text: "☑️ 선택 삭제" })]);
     try { const pref = JSON.parse(sessionStorage.getItem("str.admsort.v1") || "{}"); if (pref.s) sortBy = pref.s; if (pref.f) filt = pref.f; } catch { /* ignore */ }
     const savePref = () => { try { sessionStorage.setItem("str.admsort.v1", JSON.stringify({ s: sortBy, f: filt })); } catch { /* ignore */ } };
     const isGuest = (u) => u.anonymous || !u.email;
@@ -372,6 +391,7 @@ export function renderAdminUsers({ navigate }) {
         name: (a, b) => (a.name || a.email || "힣").localeCompare(b.name || b.email || "힣", "ko"),
       }[sortBy];
       shown.sort(by);
+      lastShown = shown; selToggle.classList.toggle("on", selMode); paintSelBar();
       countEl.textContent = shown.length === list.length ? `전체 ${list.length}명` : `${shown.length}명 · 전체 ${list.length}명 중`;
       if (!shown.length) { listHost.append(el("p", { class: "muted", text: q ? "찾는 회원이 없어요." : "이 조건에 맞는 회원이 없어요." })); return; }
       const page = shown.slice(0, limit);
@@ -380,10 +400,11 @@ export function renderAdminUsers({ navigate }) {
         const detail = el("div", { class: "adm-detail" });
         const card = el("details", { class: "panel adm-u" }, [
           el("summary", {}, [
+            selMode ? (u.uid === meUid ? el("span", { class: "sel-me", text: "나" }) : el("input", { type: "checkbox", class: "sel-cb", checked: sel.has(u.uid) || null, "aria-label": `${u.name || u.email || "회원"} 선택`, onclick: (e) => { e.stopPropagation(); if (e.target.checked) sel.add(u.uid); else sel.delete(u.uid); paintSelBar(); } })) : null,
             el("span", { class: "au-av au-av0 adm-av", text: (u.name || u.email || "?").slice(0, 1) }),
             el("div", { class: "adm-s" }, [el("b", {}, [el("span", { text: u.name || (u.anonymous || !u.email ? "게스트" : "(이름 없음)") }), u.anonymous || !u.email ? el("span", { class: "adm-guest", text: "👤 게스트" }) : null].filter(Boolean)), el("small", { text: `${u.email || `게스트 · ${u.uid.slice(0, 8)}`}${joinedAt(u) ? ` · ${new Date(joinedAt(u)).toLocaleDateString("ko-KR", { year: "2-digit", month: "numeric", day: "numeric" })} 가입${u.createdAt ? "" : "(추정)"}` : ""}` })]),
             el("span", { class: "adm-c", text: `🪙 ${w.coins ?? "-"}` }),
-          ]),
+          ].filter(Boolean)),
           detail,
         ]);
         card.addEventListener("toggle", async () => {
@@ -410,7 +431,7 @@ export function renderAdminUsers({ navigate }) {
     paintCtl();
     const fold = el("details", { class: "panel adm-fold", open: "" }, [
       el("summary", {}, [el("span", { class: "adm-fold-h" }, [el("b", { text: `👥 회원 목록 ${list.length}명` }), countEl]), el("span", { class: "op-chev", "aria-hidden": "true" })]),
-      el("div", { class: "adm-fold-b" }, [guestBulk(list, isGuest, () => setTimeout(() => location.reload(), 1200)), search, ctlHost, listHost]),
+      el("div", { class: "adm-fold-b" }, [el("div", { class: "gb" }, [selToggle, guestBulk(list, isGuest, () => setTimeout(() => location.reload(), 1200))]), search, ctlHost, selBar, listHost]),
     ]);
     host.append(fold);
     paint();
@@ -543,7 +564,7 @@ function giftList(u, w) {
 /* 관리자 — 회원 삭제 (두 번 확인) */
 /* 👤 게스트 한꺼번에 삭제 — 전체 / 30일 안 들어온 게스트만 · 휴지통 보관(기본) 또는 바로 완전 삭제 (HAE) */
 function guestBulk(list, isGuest, done) {
-  const box = el("div", { class: "gb" });
+  const box = el("span", { class: "gb-w" });
   const paint = () => {
     clear(box);
     const guests = list.filter(isGuest);
@@ -594,6 +615,46 @@ function guestBulk(list, isGuest, done) {
   };
   paint();
   return box;
+}
+
+/* ☑️ 고른 회원 한꺼번에 삭제 — 확인 창 (휴지통 보관 기본 · 완전 삭제 선택) (HAE) */
+async function bulkDeleteModal(users, label, done) {
+  let me = null; try { me = await getCloudUserNow(); } catch { /* ignore */ }
+  const T = users.filter((u) => !me || u.uid !== me.id);
+  if (!T.length) { toast("지울 회원을 골라 주세요."); return; }
+  let purge = false, armed = false, timer = 0;
+  const purgeCb = el("input", { type: "checkbox" });
+  const go = el("button", { type: "button", class: "btn btn-block adm-del", style: "margin-top:12px;" }, [el("span", {})]);
+  const prog = el("p", { class: "tiny muted", "aria-live": "polite" });
+  const paintGo = () => { go.firstChild.textContent = armed ? `정말 ${T.length}명을 지울까요? 한 번 더 누르면 시작` : `${T.length}명 삭제${purge ? " (복구 불가)" : ""}`; go.classList.toggle("armed", armed); };
+  purgeCb.addEventListener("change", () => { purge = purgeCb.checked; paintGo(); });
+  paintGo();
+  const names = T.slice(0, 6).map((u) => u.name || u.email || "게스트").join(", ") + (T.length > 6 ? ` 외 ${T.length - 6}명` : "");
+  const m = _openModal([
+    el("p", { style: "font-weight:700;", text: `${label} ${T.length}명을 지워요.` }),
+    el("p", { class: "tiny muted", text: names }),
+    el("label", { class: "gb-cb" }, [purgeCb, el("span", { text: "휴지통에 남기지 않고 바로 완전 삭제 (복구 불가)" })]),
+    el("p", { class: "tiny muted", text: "체크 안 하면 '삭제한 회원'(휴지통)에 30일 보관돼서 그동안은 되살릴 수 있어요. 지운 계정으로 들어오면 '탈퇴 처리된 계정' 안내가 떠요." }),
+    go, prog,
+  ], { title: "☑️ 선택 삭제" });
+  go.addEventListener("click", async () => {
+    if (!armed) { armed = true; paintGo(); clearTimeout(timer); timer = setTimeout(() => { armed = false; paintGo(); }, 5000); return; }
+    clearTimeout(timer); go.disabled = true;
+    let ok = 0, fail = 0, i = 0;
+    const run = async () => {
+      while (i < T.length) {
+        const u = T[i++];
+        const r = await adminDeleteUser(u.uid, u.email).catch(() => ({ error: "x" }));
+        if (r && r.ok) { ok++; if (purge) await adminPurgeUser(u.uid).catch(() => {}); } else fail++;
+        prog.textContent = `지우는 중… ${ok + fail} / ${T.length}`;
+      }
+    };
+    await Promise.all([run(), run(), run()]);
+    prog.textContent = `끝났어요 · ${ok}명 삭제${fail ? ` · ${fail}명 실패` : ""}`;
+    toast(`${ok}명을 삭제했어요${purge ? " (완전 삭제)" : " · 휴지통에 30일 보관"}`);
+    window.dispatchEvent(new Event("hae-trash"));
+    setTimeout(() => { m.close(); if (done) done(); }, 900);
+  });
 }
 
 function delBox(u, card) {
@@ -1044,4 +1105,129 @@ function eventsEditor() {
   paint();
   getEvents().then((l) => { loaded = true; if (l === null) { state.textContent = "기념일을 불러오지 못했어요."; loaded = false; } else list = l; paint(); });
   return el("section", { class: "wrap", style: "margin-bottom: var(--sp-4);" }, [box]);
+}
+
+
+/* =========================================================
+   📊 방문 통계 (회원 + 비회원) · 🚨 오류 신고 — 관리자 화면 (HAE)
+   ========================================================= */
+const STAT_NAMES = {
+  home: "🏠 홈", menu: "📋 전체 메뉴", profile: "👤 마이", store: "🪙 충전소", saved: "🗂 보관함", people: "💞 내 사람",
+  saju: "🔮 사주 입력", "saju-result": "🔮 사주 결과", "saju-loading": "🔮 사주 계산 중", tarot: "🃏 타로", "tarot-spread": "🃏 타로 펼치기",
+  "tarot-select": "🃏 타로 고르기", "tarot-result": "🃏 타로 결과", compat: "💗 궁합 입력", "compat-result": "💗 궁합 결과",
+  fortune: "🌙 운세", "fortune-saju": "🌙 사주 운세", result: "📄 저장한 풀이", about: "ℹ️ 이용 안내", privacy: "📜 개인정보처리방침",
+  terms: "📜 이용약관", reviews: "💬 후기", inquiry: "✉️ 1:1 문의", "admin-users": "🛠 관리자", invite: "💌 친구 초대", addfriend: "💌 친구 추가",
+};
+function statLabel(k) {
+  if (STAT_NAMES[k]) return STAT_NAMES[k];
+  const it = ALL_ITEMS.find((x) => x.to && statKey(x.to) === k);
+  return it ? `${it.em} ${it.name}` : k;
+}
+const sumBy = (arr, f) => arr.reduce((a, x) => a + (f(x) || 0), 0);
+function statsPanel() {
+  const box = el("div", { class: "panel dash st-pan", "data-noterm": "" }, [el("p", { class: "muted tiny", text: "📊 방문 통계를 불러오는 중…" })]);
+  let range = 7, data = null;
+  const tile = (em, label, big, sub, hot) => el("div", { class: "dash-t" + (hot ? " hot" : "") }, [
+    el("span", { class: "dash-l", text: `${em} ${label}` }), el("b", { class: "dash-n", text: String(big) }), el("small", { class: "dash-s", text: sub }),
+  ]);
+  const paint = () => {
+    clear(box);
+    if (data.error) { box.append(el("p", { class: "eyebrow", text: "📊 방문 통계" }), el("p", { class: "muted tiny", text: data.error })); return; }
+    const D = data.days, last = D.slice(-range), prev = D.slice(-range * 2, -range);
+    const today = D[D.length - 1] || {}, yest = D[D.length - 2] || {};
+    const v = sumBy(last, (x) => x.v), vPrev = sumBy(prev, (x) => x.v);
+    const diff = vPrev ? Math.round(((v - vPrev) / vPrev) * 100) : null;
+    const tabs = el("div", { class: "dash-tabs", role: "tablist" }, [[7, "7일"], [14, "14일"], [30, "30일"]].map(([n, t]) =>
+      el("button", { type: "button", role: "tab", "aria-selected": String(n === range), class: "dash-tab" + (n === range ? " on" : ""), onclick: () => { range = n; paint(); } }, [el("span", { text: t })])));
+    box.append(
+      el("div", { class: "dash-h" }, [el("p", { class: "eyebrow", text: "📊 방문 통계 · 회원 + 비회원" }), tabs]),
+      el("div", { class: "dash-grid" }, [
+        tile("👣", "오늘 방문", today.v || 0, `어제 ${yest.v || 0}명`),
+        tile("📅", `${range}일 방문`, v, diff == null ? "기기 기준 · 하루 한 번" : `지난 ${range}일보다 ${diff >= 0 ? "▲" : "▼"} ${Math.abs(diff)}%`, diff != null && diff > 0),
+        tile("🌱", "처음 온 사람", sumBy(last, (x) => x.n), `${range}일 동안`),
+        tile("👀", "화면 열람", sumBy(last, (x) => x.pv), `1명당 ${v ? (sumBy(last, (x) => x.pv) / v).toFixed(1) : 0}화면`),
+        tile("🔔", "알림 켠 사람", data.pushOn == null ? "-" : data.pushOn, data.pushOn == null ? "규칙에 push 관리자 읽기 줄 필요" : "지금 기준"),
+        tile("🚨", "오류", sumBy(last, (x) => x.err), `${range}일 · 아래에서 확인`, sumBy(last, (x) => x.err) > 0),
+      ]),
+    );
+    // 날짜별 막대
+    const mx = Math.max(1, ...last.map((x) => x.v || 0));
+    box.append(el("div", { class: "st-chart" }, [
+      el("p", { class: "st-cap", text: "날짜별 방문 (기기 수)" }),
+      el("div", { class: "st-bars" + (range > 14 ? " dense" : ""), role: "img", "aria-label": last.map((x) => `${+x.day.slice(5, 7)}월 ${+x.day.slice(8)}일 ${x.v || 0}명`).join(", ") }, last.map((x, i) => {
+        const wd = new Date(x.day + "T00:00:00+09:00").getDay();
+        return el("div", { class: "st-bar" + (i === last.length - 1 ? " now" : "") + (wd === 0 || wd === 6 ? " we" : ""), title: `${x.day} · 방문 ${x.v || 0} · 화면 ${x.pv || 0}` }, [
+          el("span", { class: "st-v", text: String(x.v || 0) }),
+          el("i", { style: `height:${Math.max(3, Math.round(((x.v || 0) / mx) * 100))}%;` }),
+          el("b", { text: range > 14 && i % 3 ? "" : `${+x.day.slice(8)}` }),
+        ]);
+      })),
+    ]));
+    // 인기 화면 TOP 10
+    const pm = {}; last.forEach((x) => Object.entries(x.p || {}).forEach(([k, c]) => { pm[k] = (pm[k] || 0) + c; }));
+    const top = Object.entries(pm).sort((a, b) => b[1] - a[1]).slice(0, 10), tmax = top.length ? top[0][1] : 1;
+    box.append(el("div", { class: "dash-topbox" }, [
+      el("div", { class: "dash-th" }, [el("b", { text: `🔥 많이 본 화면 TOP 10 · ${range}일` })]),
+      top.length ? el("div", { class: "dash-top" }, top.map(([k, c], i) => el("div", { class: "dash-r" }, [
+        el("span", { class: "dash-rk" + (i === 0 ? " first" : ""), text: String(i + 1) }),
+        el("div", { class: "dash-rb" }, [el("b", { text: statLabel(k) }), el("div", { class: "dash-bar" }, [el("i", { style: `width:${Math.max(6, Math.round((c / tmax) * 100))}%` })])]),
+        el("div", { class: "dash-rv" }, [el("b", { text: `${c}회` })]),
+      ]))) : el("p", { class: "muted tiny", text: "아직 기록이 없어요. 새 버전을 올린 뒤부터 쌓여요." }),
+    ]));
+    // 기기
+    const dv = { mob: 0, pc: 0, app: 0, inapp: 0 }; last.forEach((x) => Object.entries(x.dev || {}).forEach(([k, c]) => { dv[k] = (dv[k] || 0) + c; }));
+    const dt = Math.max(1, sumBy(Object.values(dv), (x) => x));
+    box.append(el("div", { class: "st-dev" }, [
+      el("p", { class: "st-cap", text: "어디로 들어왔나요?" }),
+      el("div", { class: "st-stack", role: "img", "aria-label": "기기 비율" }, [["mob", "📱 폰 브라우저"], ["app", "🏠 홈 화면 앱"], ["inapp", "💬 카톡 · 인스타 안"], ["pc", "💻 PC"]].map(([k]) =>
+        dv[k] ? el("i", { class: "sd-" + k, style: `width:${(dv[k] / dt) * 100}%;` }) : null).filter(Boolean)),
+      el("div", { class: "st-leg" }, [["mob", "📱 폰 브라우저"], ["app", "🏠 홈 화면 앱"], ["inapp", "💬 카톡 · 인스타 안"], ["pc", "💻 PC"]].map(([k, t]) =>
+        el("span", {}, [el("i", { class: "sd-" + k }), el("span", { text: `${t} ${Math.round((dv[k] / dt) * 100)}%` })]))),
+    ]));
+    box.append(el("p", { class: "tiny muted dash-foot", text: "진짜 사이트 주소로 들어온 방문만 세요 (관리자 모드를 켠 기기 · 내 PC 테스트는 빼요). 이름 · 이메일 같은 개인 정보는 저장하지 않고 숫자만 더해요." }));
+  };
+  adminStats(30).then((r) => { data = r; paint(); });
+  return el("section", { class: "wrap", style: "margin-bottom: var(--sp-4);" }, [box]);
+}
+
+function errorsPanel() {
+  const sec = el("section", { class: "wrap", style: "margin-bottom: var(--sp-4);" });
+  const fold = el("details", { class: "panel adm-fold er-pan" });
+  const sumEl = el("span", { class: "er-badge", text: "…" });
+  const body = el("div", { class: "adm-fold-b" }, [el("p", { class: "muted tiny", text: "불러오는 중…" })]);
+  fold.append(el("summary", {}, [el("span", { class: "adm-fold-h" }, [el("b", { text: "🚨 오류 신고" }), el("small", { class: "tiny muted", text: "이용자 화면에서 난 오류가 자동으로 모여요" })]), sumEl]), body);
+  sec.append(fold);
+  const fmt = (t) => new Date(t).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  const load = () => adminErrors().then((r) => {
+    clear(body);
+    if (r.error) { sumEl.textContent = "-"; body.append(el("p", { class: "muted tiny", text: r.error })); return; }
+    const groups = {};
+    r.list.forEach((e) => { const k = (e.msg || "").slice(0, 120); (groups[k] = groups[k] || { msg: e.msg, items: [] }).items.push(e); });
+    const gs = Object.values(groups).sort((a, b) => b.items[0].at - a.items[0].at);
+    sumEl.textContent = r.list.length ? `${gs.length}종 · ${r.list.length}건` : "없음 ✓";
+    sumEl.classList.toggle("hot", r.list.length > 0);
+    if (!gs.length) { body.append(el("p", { class: "muted tiny", text: "신고된 오류가 없어요 🐾 새 버전을 올린 뒤부터 자동으로 모여요." })); return; }
+    gs.forEach((g) => {
+      const it = g.items, last = it[0];
+      const paths = [...new Set(it.map((x) => x.path))].slice(0, 4), devs = [...new Set(it.map((x) => x.dev))].slice(0, 4), builds = [...new Set(it.map((x) => x.build))].filter(Boolean).slice(0, 3);
+      let armed = false;
+      const del = el("button", { type: "button", class: "ev-del" }, [el("span", { text: "해결했어요 · 지우기" })]);
+      del.addEventListener("click", async () => {
+        if (!armed) { armed = true; del.classList.add("armed"); del.firstChild.textContent = "한 번 더 누르면 지워요"; setTimeout(() => { armed = false; del.classList.remove("armed"); del.firstChild.textContent = "해결했어요 · 지우기"; }, 3500); return; }
+        const x = await adminDeleteErrors(it.map((e) => e.id));
+        if (x.error) { toast(x.error); return; }
+        toast("오류 기록을 지웠어요"); load();
+      });
+      body.append(el("div", { class: "er-row" }, [
+        el("div", { class: "er-top" }, [el("b", { class: "er-n", text: `${it.length}회` }), el("code", { class: "er-msg", text: g.msg })]),
+        el("p", { class: "tiny muted", text: `마지막 ${fmt(last.at)} · 화면 ${paths.join(", ")}` }),
+        el("p", { class: "tiny muted", text: `기기 ${devs.join(" / ")}${builds.length ? ` · 버전 ${builds.join(", ")}` : ""}${last.where ? ` · ${last.where}` : ""}` }),
+        last.stack ? el("details", { class: "er-st" }, [el("summary", { text: "자세히 (개발용)" }), el("pre", { text: last.stack })]) : null,
+        del,
+      ].filter(Boolean)));
+    });
+    body.append(el("p", { class: "tiny muted", text: "같은 오류는 한 기기에서 하루 한 번만 모여요. 오류 문구를 복사해서 HAE에게 보여 주면 고치기 쉬워요." }));
+  });
+  load();
+  return sec;
 }

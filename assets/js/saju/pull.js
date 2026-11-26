@@ -6,7 +6,7 @@
    건강하게 드러내는 법을 알려 준다. 미래를 확정하지 않는다.
    ========================================================= */
 
-import { charmSpirits, dayNightStyle, godTally, idealType } from "./spouse.js";
+import { charmSpirits, dayNightStyle, godTally, idealType } from "./report.js";
 
 const STEM_ELEM = ["wood", "wood", "fire", "fire", "earth", "earth", "metal", "metal", "water", "water"];
 const STEM_KR = ["갑목", "을목", "병화", "정화", "무토", "기토", "경금", "신금", "임수", "계수"];
@@ -111,7 +111,7 @@ export function pullReading(profile) {
    그 사람이 왜·얼마나 나에게 빠질 수 있는지와
    그 사람 사주에 맞는 다가가는 법을 푼다.
    ========================================================= */
-import { harmonyBetween, monthlyFlow } from "./relationship.js";
+import { harmonyBetween, monthlyFlow } from "./compat.js";
 
 const ELEM_KR = { wood: "목(木)", fire: "화(火)", earth: "토(土)", metal: "금(金)", water: "수(水)" };
 const GEN = { wood: "fire", fire: "earth", earth: "metal", metal: "water", water: "wood" };   // 생

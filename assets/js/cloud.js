@@ -752,3 +752,229 @@ export async function syncPushBirth(birth) {
   const f = await fb().catch(() => null); const u = f && f.auth.currentUser; if (!u) return;
   try { await f.F.updateDoc(f.F.doc(f.db, "push", u.uid), { birth: b, updatedAt: Date.now() }); } catch { /* ignore */ }
 }
+
+
+/* ===================================================================
+   📊 방문 통계 · 🚨 오류 자동 신고 (HAE)
+   · stats/{YYYY-MM-DD}  → v(방문 기기) · n(처음 온 기기) · pv(화면 열람) · p{화면별} · dev{폰·PC·앱} · err(오류 수)
+     개인 정보 없이 숫자만 더해요. 기기마다 하루 한 번만 '방문'으로 세요.
+   · errors/{id}         → 오류 메시지 · 화면 · 기기 종류 · 버전 (같은 오류는 기기마다 하루 한 번만)
+   · 진짜 사이트 주소에서만 세요 (내 PC 테스트 · 미리보기는 빼고) — 개인 도메인을 붙이면 STAT_HOSTS에 추가
+   · 관리자 모드를 켠 기기는 세지 않아요
+   =================================================================== */
+const STAT_HOSTS = ["luminahae.github.io"];
+const kstDay = (t = Date.now()) => new Date(t + 9 * 3600 * 1000).toISOString().slice(0, 10);
+function statOn() {
+  try {
+    if (!STAT_HOSTS.includes(location.hostname)) return false;
+    if (localStorage.getItem("str.admin.v1") === "1") return false; // 관리자 기기는 빼고
+    return isCloudEnabled();
+  } catch { return false; }
+}
+const KEEP2 = new Set(["saju", "tarot", "compat", "fortune", "pull", "free", "theme"]);
+/** 화면 주소 → 통계 이름 (/saju/result → saju-result, /result/abc → result) */
+export function statKey(path) {
+  const segs = String(path || "").split("?")[0].split("/").filter(Boolean);
+  if (!segs.length) return "home";
+  const a = segs[0].replace(/[^a-z0-9-]/gi, "").slice(0, 24) || "etc";
+  const b = segs[1] && KEEP2.has(a) && /^[a-z][a-z0-9-]{0,23}$/i.test(segs[1]) ? "-" + segs[1] : "";
+  return (a + b).toLowerCase();
+}
+let _sb = null, _sbT = null;
+function sbAdd(fn) {
+  if (!statOn()) return;
+  _sb = _sb || { pv: 0, p: {}, v: 0, n: 0, dev: {}, err: 0 };
+  fn(_sb);
+  clearTimeout(_sbT); _sbT = setTimeout(flushStats, 15000);
+}
+export async function flushStats() {
+  clearTimeout(_sbT); _sbT = null;
+  const b = _sb; _sb = null;
+  if (!b) return;
+  const f = await fb().catch(() => null); if (!f) return;
+  const inc = f.F.increment, d = {};
+  if (b.pv) d.pv = inc(b.pv);
+  if (b.v) d.v = inc(b.v);
+  if (b.n) d.n = inc(b.n);
+  if (b.err) d.err = inc(b.err);
+  const p = Object.entries(b.p); if (p.length) d.p = Object.fromEntries(p.map(([k, c]) => [k, inc(c)]));
+  const dv = Object.entries(b.dev); if (dv.length) d.dev = Object.fromEntries(dv.map(([k, c]) => [k, inc(c)]));
+  try { await f.F.setDoc(f.F.doc(f.db, "stats", kstDay()), d, { merge: true }); } catch { /* 규칙을 아직 안 넣었으면 조용히 건너뜀 */ }
+}
+if (typeof document !== "undefined") document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushStats(); });
+
+/** 앱을 열 때 — 이 기기의 오늘 첫 방문이면 1 */
+export function statVisit() {
+  try {
+    const day = kstDay();
+    if (localStorage.getItem("str.stat.day") === day) return;
+    sbAdd((b) => {
+      localStorage.setItem("str.stat.day", day);
+      b.v += 1;
+      if (!localStorage.getItem("str.stat.first")) { localStorage.setItem("str.stat.first", day); b.n += 1; }
+      const ua = navigator.userAgent || "";
+      const app = (() => { try { return matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; } catch { return false; } })();
+      const k = app ? "app" : /KAKAOTALK|Instagram|FBAN|FBAV|NAVER|Line\//i.test(ua) ? "inapp" : /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ? "mob" : "pc";
+      b.dev[k] = (b.dev[k] || 0) + 1;
+    });
+  } catch { /* ignore */ }
+}
+/** 화면을 열 때마다 */
+export function statRoute(path) {
+  sbAdd((b) => { const k = statKey(path); b.pv += 1; b.p[k] = (b.p[k] || 0) + 1; });
+}
+
+/* ---- 🚨 오류 자동 신고 ---- */
+const ERR_SKIP = /ResizeObserver loop|Script error\.?$|chrome-extension|moz-extension|safari-extension|webkit-masked-url|__gCrWeb|AbortError|The user aborted|Load failed|Failed to fetch|NetworkError|Network request failed|NotAllowedError|permission-denied|unavailable|QuotaExceeded/i;
+let _errN = 0;
+export function devName(ua) {
+  ua = ua || "";
+  const os = /iPhone|iPad|iPod/i.test(ua) ? "iOS" : /Android/i.test(ua) ? "Android" : /Windows/i.test(ua) ? "Windows" : /Mac OS/i.test(ua) ? "Mac" : "기타";
+  const br = /KAKAOTALK/i.test(ua) ? "카톡" : /NAVER/i.test(ua) ? "네이버" : /SamsungBrowser/i.test(ua) ? "삼성인터넷" : /Edg\//.test(ua) ? "Edge" : /CriOS|Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : /Firefox|FxiOS/.test(ua) ? "Firefox" : "브라우저";
+  return `${os} · ${br}`;
+}
+export async function reportError(err, where = "") {
+  try {
+    if (!statOn() || _errN >= 5) return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return; // 인터넷 끊김은 오류가 아니라서
+    const msg = String((err && (err.message || err.reason || err)) || "알 수 없는 오류").slice(0, 300);
+    if (ERR_SKIP.test(msg)) return;
+    const day = kstDay(), seenK = "str.errseen.v1";
+    let seen = {}; try { seen = JSON.parse(localStorage.getItem(seenK) || "{}"); } catch { /* ignore */ }
+    if (seen.d !== day || !Array.isArray(seen.m)) seen = { d: day, m: [] };
+    const sig = msg.slice(0, 80);
+    if (seen.m.includes(sig)) return;
+    seen.m.push(sig); seen.m = seen.m.slice(-20);
+    try { localStorage.setItem(seenK, JSON.stringify(seen)); } catch { /* ignore */ }
+    _errN += 1;
+    const stack = String((err && err.stack) || "").split("\n").slice(0, 4).join("\n").replace(/https?:\/\/[^/\s]+/g, "").slice(0, 600);
+    const f = await fb().catch(() => null); if (!f) return;
+    sbAdd((b) => { b.err += 1; });
+    await f.F.addDoc(f.F.collection(f.db, "errors"), {
+      msg, stack, where: String(where).slice(0, 60),
+      path: String((location.hash || "#/").split("?")[0]).slice(0, 80),
+      dev: devName(navigator.userAgent), build: String(document.documentElement.dataset.build || "").slice(0, 20),
+      at: Date.now(),
+    });
+  } catch { /* 신고 실패는 조용히 */ }
+}
+/** 앱 시작할 때 한 번 — 처리 안 된 오류를 자동으로 잡아요 */
+export function watchErrors() {
+  if (typeof window === "undefined" || window.__haeErrWatch) return;
+  window.__haeErrWatch = true;
+  window.addEventListener("error", (e) => {
+    if (e && e.target && e.target !== window && (e.target.src || e.target.href)) return; // 이미지·파일 못 받음은 빼고
+    reportError(e.error || e.message, e.filename ? `${String(e.filename).split("/").pop()}:${e.lineno}` : "window");
+  }, true);
+  window.addEventListener("unhandledrejection", (e) => reportError(e.reason, "promise"));
+}
+
+/* ---- 관리자: 통계 · 오류 읽기 ---- */
+export async function adminStats(days = 30) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  try {
+    const from = kstDay(Date.now() - (days - 1) * 86400000);
+    const q = f.F.query(f.F.collection(f.db, "stats"), f.F.where(f.F.documentId(), ">=", from));
+    const s = await f.F.getDocs(q);
+    const map = {}; s.forEach((d) => { map[d.id] = d.data(); });
+    const out = [];
+    for (let i = days - 1; i >= 0; i--) { const k = kstDay(Date.now() - i * 86400000); out.push({ day: k, ...(map[k] || {}) }); }
+    let pushOn = null;
+    try { const c = await f.F.getCountFromServer(f.F.query(f.F.collection(f.db, "push"), f.F.where("on", "==", true))); pushOn = c.data().count; } catch { /* 규칙에 관리자 읽기 줄이 없으면 */ }
+    return { days: out, pushOn };
+  } catch (e) { return { error: e && e.code === "permission-denied" ? "통계를 볼 권한이 없어요. Firestore 규칙에 stats 줄을 넣고 게시해 주세요." : "통계를 불러오지 못했어요." }; }
+}
+export async function adminErrors() {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  try {
+    const s = await f.F.getDocs(f.F.query(f.F.collection(f.db, "errors"), f.F.orderBy("at", "desc"), f.F.limit(200)));
+    const list = []; s.forEach((d) => list.push({ id: d.id, ...d.data() }));
+    return { list };
+  } catch (e) { return { error: e && e.code === "permission-denied" ? "오류 기록을 볼 권한이 없어요. Firestore 규칙에 errors 줄을 넣고 게시해 주세요." : "오류 기록을 불러오지 못했어요." }; }
+}
+export async function adminDeleteErrors(ids) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  try { await Promise.all((ids || []).map((id) => f.F.deleteDoc(f.F.doc(f.db, "errors", id)))); return { ok: true }; }
+  catch { return { error: "지우지 못했어요." }; }
+}
+
+
+/* ===================================================================
+   🔮 해묘 상담소 — 전문가(관리자가 답하는) 상담 (HAE)
+   · notice/experts  → 상담사 목록 { list: [{ id, name, em, field, intro, cost, on }] } — 누구나 읽기 · 관리자만 쓰기
+   · consults/{id}   → 상담 한 건 { uid, name, expertId, expertName, field, title, birth, msgs:[{by:"u"|"e", t, at}],
+                         status: "wait"|"answered"|"done", unreadUser, unreadAdmin, replyPushed, createdAt, updatedAt }
+   =================================================================== */
+export const DEFAULT_EXPERTS = [
+  { id: "tarot", name: "루나", em: "🔮", field: "타로", intro: "카드 세 장으로 지금 마음과 흐름을 읽어 드려요. 연애 · 선택 고민에 강해요.", cost: 3, on: true },
+  { id: "saju", name: "해원", em: "📜", field: "사주", intro: "사주(四柱) 원국과 대운으로 큰 흐름을 짚어 드려요. 진로 · 시기 고민에 강해요.", cost: 3, on: true },
+  { id: "love", name: "묘묘", em: "💗", field: "연애", intro: "두 사람의 사주 궁합과 지금 마음을 함께 봐요. 재회 · 썸 · 이별 고민 환영해요.", cost: 3, on: true },
+];
+export async function getExperts() {
+  const f = await fb().catch(() => null); if (!f) return DEFAULT_EXPERTS;
+  try { const s = await f.F.getDoc(f.F.doc(f.db, "notice", "experts")); const l = s.exists() ? (s.data().list || []) : []; return l.length ? l : DEFAULT_EXPERTS; } catch { return DEFAULT_EXPERTS; }
+}
+export async function adminSetExperts(list) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  try {
+    const clean = (list || []).slice(0, 12).map((e, i) => ({
+      id: String(e.id || "x" + i).replace(/[^a-z0-9_-]/gi, "").slice(0, 20) || "x" + i, name: String(e.name || "상담사").slice(0, 12), em: String(e.em || "🔮").slice(0, 4),
+      field: String(e.field || "사주").slice(0, 8), intro: String(e.intro || "").slice(0, 120), cost: Math.max(0, Math.min(50, Math.round(+e.cost || 0))), on: e.on !== false,
+    }));
+    await f.F.setDoc(f.F.doc(f.db, "notice", "experts"), { list: clean, updatedAt: Date.now() });
+    return { ok: true, list: clean };
+  } catch (e) { return { error: permMsg(e, "상담사 저장") }; }
+}
+/** 새 상담 보내기 — 첫 메시지 포함 */
+export async function createConsult({ expert, title, body, birth, name }) {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser;
+  if (!u) return { error: "로그인한 뒤에 상담을 보낼 수 있어요." };
+  const id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), now = Date.now();
+  const doc = {
+    id, uid: u.uid, name: String(name || "익명").slice(0, 20), expertId: String(expert.id).slice(0, 20), expertName: String(expert.name).slice(0, 12), field: String(expert.field).slice(0, 8),
+    title: String(title || "").slice(0, 60), birth: String(birth || "").slice(0, 300),
+    msgs: [{ by: "u", t: String(body || "").slice(0, 1500), at: now }],
+    status: "wait", unreadUser: false, unreadAdmin: true, replyPushed: true, createdAt: now, updatedAt: now,
+  };
+  try { await f.F.setDoc(f.F.doc(f.db, "consults", id), doc); return { ok: true, id }; }
+  catch (e) { return { error: permMsg(e, "상담 보내기") }; }
+}
+export async function myConsults() {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser; if (!u) return null;
+  try { const qs = await f.F.getDocs(f.F.query(f.F.collection(f.db, "consults"), f.F.where("uid", "==", u.uid))); return qs.docs.map((d) => d.data()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); }
+  catch { return null; }
+}
+export async function getConsult(id) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return null;
+  try { const s = await f.F.getDoc(f.F.doc(f.db, "consults", String(id))); return s.exists() ? s.data() : null; } catch { return null; }
+}
+/** 이용자: 덧붙여 묻기 · 읽음 표시 */
+export async function addConsultMsg(c, text) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  if ((c.msgs || []).length >= 30) return { error: "한 상담에는 30개까지 주고받을 수 있어요. 새 상담을 열어 주세요." };
+  const msgs = (c.msgs || []).concat([{ by: "u", t: String(text || "").slice(0, 1500), at: Date.now() }]);
+  try { await f.F.updateDoc(f.F.doc(f.db, "consults", c.id), { msgs, status: "wait", unreadAdmin: true, unreadUser: false, updatedAt: Date.now() }); return { ok: true, msgs }; }
+  catch (e) { return { error: permMsg(e, "보내기") }; }
+}
+export async function markConsultRead(id) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return;
+  try { await f.F.updateDoc(f.F.doc(f.db, "consults", String(id)), { unreadUser: false }); } catch { /* ignore */ }
+}
+/** 관리자 */
+export async function adminConsults() {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  try { const qs = await f.F.getDocs(f.F.collection(f.db, "consults")); return { list: qs.docs.map((d) => d.data()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)) }; }
+  catch (e) { return { error: permMsg(e, "상담 불러오기") }; }
+}
+export async function adminReplyConsult(c, text, { close = false } = {}) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  const msgs = text ? (c.msgs || []).concat([{ by: "e", t: String(text).slice(0, 3000), at: Date.now() }]) : (c.msgs || []);
+  try {
+    await f.F.updateDoc(f.F.doc(f.db, "consults", c.id), { msgs, status: close ? "done" : "answered", unreadUser: !!text, unreadAdmin: false, replyPushed: !text, updatedAt: Date.now() });
+    return { ok: true, msgs };
+  } catch (e) { return { error: permMsg(e, "답변 보내기") }; }
+}
+export async function adminDeleteConsult(id) {
+  const f = await fb().catch(() => null); if (!f) return { error: "먼저 로그인해 주세요." };
+  try { await f.F.deleteDoc(f.F.doc(f.db, "consults", String(id))); return { ok: true }; } catch (e) { return { error: permMsg(e, "지우기") }; }
+}

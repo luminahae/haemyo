@@ -3,7 +3,7 @@ import { pageHeader, backLink, noticeBox, loadDisclaimer } from "./shared.js";
 import { getMyBirth } from "../state.js";
 import { computeSaju } from "../saju/manse.js";
 import { analyzeStrength } from "../saju/strength.js";
-import { godTally } from "../saju/spouse.js";
+import { godTally } from "../saju/report.js";
 import { tenGod, yearFlow, daeunTimeline, ageFromSolar } from "../saju/fortune.js";
 import { computeZiwei } from "../saju/ziwei.js";
 import { loadTarotData, getCard, cardFrontHTML } from "../tarot/cardArt.js";

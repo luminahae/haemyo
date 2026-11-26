@@ -4,7 +4,7 @@ import { getMyBirth } from "../state.js";
 import { personSwitch } from "./people.js";
 import { computeSaju } from "../saju/manse.js";
 import { tenGod } from "../saju/fortune.js";
-import { monthlyFlow } from "../saju/relationship.js";
+import { monthlyFlow } from "../saju/compat.js";
 import { isUnlocked, unlock, getCoins, costOf, noCoinToast } from "../wallet.js";
 import { loadTarotData, getCard, cardFrontHTML } from "../tarot/cardArt.js";
 /* =========================================================

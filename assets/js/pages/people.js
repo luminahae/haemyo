@@ -1,13 +1,19 @@
 import { el, clear, toast, copyText, validateBirthInput, icon, ymdPicker } from "../utils/dom.js";
 import { sijinPicker, sijinLabel } from "./sajuInput.js";
-import { inviteLinkFor } from "./invite.js";
+/* 초대 링크 (profile.js의 것과 같은 모양 — 홈이 무거운 마이 화면까지 받지 않게 여기에 따로 둠 · HAE) */
+function inviteLinkFor(inp) {
+  if (!inp || !inp.birthDate) return `${location.href.split("#")[0]}#/invite`;
+  const { name, birthDate, birthTime, timeUnknown, calendarType, leapMonth, gender, timezone } = inp;
+  let e = ""; try { e = btoa(unescape(encodeURIComponent(JSON.stringify({ name, birthDate, birthTime, timeUnknown, calendarType, leapMonth, gender, timezone })))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); } catch { /* ignore */ }
+  return `${location.href.split("#")[0]}#/invite/${e}`;
+}
 import { getPeople, savePerson, deletePerson, getOwnBirth as getMyBirth, makeId, stash, getViewAs, setViewAs, getOwnBirth, reorderPeople } from "../state.js";
 import { pageHeader, backLink, noticeBox, loadDisclaimer, openModal } from "./shared.js";
 import { spend, getCoins, costOf, grantFriendBundle, isUnlocked, unlock, noCoinToast } from "../wallet.js";
 import { computeSaju } from "../saju/manse.js";
 import { benefactorCheck } from "../saju/guiin.js";
 import { analyzeCompat } from "../saju/compat.js";
-import { charmSpirits } from "../saju/spouse.js";
+import { charmSpirits } from "../saju/report.js";
 import { analyzeStrength } from "../saju/strength.js";
 import { tenGod } from "../saju/fortune.js";
 /* 친구 카드 — 펼친 카드 기억(이 탭 동안) · 순서 편집 모드 */

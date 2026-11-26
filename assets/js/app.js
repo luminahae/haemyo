@@ -1,51 +1,181 @@
 import { el, $, clear, icon, toast as _toast } from "./utils/dom.js";
 import { renderHome } from "./pages/home.js";
 import { renderSajuInput } from "./pages/sajuInput.js";
-import { renderSajuLoading, renderSajuResult } from "./pages/sajuResult.js";
-import { renderTarotQuestion, renderTarotSpread } from "./pages/tarotQuestion.js";
-import { renderTarotSelect } from "./pages/tarotQuestion.js";
-import { renderTarotResult } from "./pages/tarotQuestion.js";
-import { renderCompatInput } from "./pages/compatPlus.js";
-import { renderCompatResult } from "./pages/compatResult.js";
-import { renderZiweiResult } from "./pages/reports2.js";
-import { renderOracle } from "./pages/tarotQuestion.js";
-import { renderPeople, renderRanks } from "./pages/people.js";
-import { renderGuiinResult } from "./pages/sinsal2.js";
-import { renderStore, renderAdminUsers } from "./pages/store.js";
-import { renderFortuneHub, renderTopicReading } from "./pages/fortuneHub.js";
-import { renderTojeong } from "./pages/tojeong.js";
-import { renderInvite, renderAddFriend } from "./pages/invite.js";
-import { renderZodiac, renderStar, renderBiorhythm, renderCharm, renderLuckyCard, renderPull, renderPullPair } from "./pages/extras.js";
-import { renderInyeon } from "./pages/special.js";
-import { renderExplore, renderThemeReading } from "./pages/explore.js";
-import { renderDream } from "./pages/dream.js";
-import { renderCalendar } from "./pages/calendar.js";
-import { renderGwansang } from "./pages/more.js";
-import { renderSaved, renderResultById } from "./pages/profile.js";
-import { renderAbout, renderPrivacy, renderNotFound, renderReviews, renderInquiry } from "./pages/about.js";
-import { renderProfile } from "./pages/profile.js";
 import { renderManse, startHanjaObserver } from "./pages/sajuInput.js";
-import { renderWonguk } from "./pages/wonguk.js";
-import { renderStudy } from "./pages/study.js";
-import { renderDday, renderPastLife } from "./pages/destiny.js";
-import { renderMenu } from "./pages/menu.js";
-import { renderPremium } from "./pages/premium.js";
-import { renderFreeItem } from "./pages/freeGenre.js";
-import { renderRich, renderBizJob, renderMoneyTime } from "./pages/rich.js";
-import { renderSal } from "./pages/sinsal2.js";
-import { renderLuck12, renderLove10, renderBlueprint, renderSpouseLuck, renderStory } from "./pages/reports2.js";
-import { renderDohwa, renderGwimun, renderLoveCount, renderNoMarry, renderChildren, renderManual, renderTimeline, renderCompleteMe, renderFate3, renderIdolCompat, renderSoYukim, renderAstroDice, renderDiary, renderHwagae, renderYeokma, renderReunionDeep, renderLoveFunItem, renderMonthlyReport } from "./pages/special.js";
-import { renderPalm, renderNameReading, renderSajuMbti, renderStudyLuck, renderNaming } from "./pages/more.js";
-import { renderIching, renderGaeun, renderLuckyNumber, renderSajuToon, renderClassic, renderHealthSaju } from "./pages/fun.js";
-import { startTermTips } from "./utils/glossary.js";
-import { renderLifespan, renderTojeongPlus, renderTojeongCompat, renderTojeongTheme } from "./pages/tojeong.js";
-import { renderCompatPlus } from "./pages/compatPlus.js";
+import { startTermTips } from "./utils/dom.js";
 import { getActiveProfile } from "./auth.js";
 import { getViewAs, setViewAs } from "./state.js";
 import { downloadPanel } from "./utils/shareImage.js";
 import { getCoins, isUnlimited, isAdmin, grantDailyLogin, grantMonthly } from "./wallet.js";
+import { statVisit, statRoute, watchErrors, reportError } from "./cloud.js";
 import { adminInquiries, isCloudEnabled, handleRedirect, pullState, pushState, collectState, clearGuestSlot, loginGoogle, pullResults, takeGifts, checkResetCode, doResetPassword, doApplyCode } from "./cloud.js";
 import { ensureProfile, setActive as setActiveProfile, getActiveId as activeIdNow, avatarEl, setProfilePhoto } from "./auth.js";
+
+/* ⚡ 화면 파일은 그 화면을 열 때만 받아요 (첫 화면이 빨라지게 · HAE) */
+const PAGE_MODS = {
+  sajuResult: (q = "") => import(`./pages/sajuResult.js${q}`),
+  tarotQuestion: (q = "") => import(`./pages/tarotQuestion.js${q}`),
+  compatPlus: (q = "") => import(`./pages/compatPlus.js${q}`),
+  compatResult: (q = "") => import(`./pages/compatResult.js${q}`),
+  reports2: (q = "") => import(`./pages/reports2.js${q}`),
+  people: (q = "") => import(`./pages/people.js${q}`),
+  sinsal2: (q = "") => import(`./pages/sinsal2.js${q}`),
+  store: (q = "") => import(`./pages/store.js${q}`),
+  fortuneHub: (q = "") => import(`./pages/fortuneHub.js${q}`),
+  tojeong: (q = "") => import(`./pages/tojeong.js${q}`),
+  profile: (q = "") => import(`./pages/profile.js${q}`),
+  fun: (q = "") => import(`./pages/fun.js${q}`),
+  special: (q = "") => import(`./pages/special.js${q}`),
+  explore: (q = "") => import(`./pages/explore.js${q}`),
+  more: (q = "") => import(`./pages/more.js${q}`),
+  about: (q = "") => import(`./pages/about.js${q}`),
+  wonguk: (q = "") => import(`./pages/wonguk.js${q}`),
+  study: (q = "") => import(`./pages/study.js${q}`),
+  destiny: (q = "") => import(`./pages/destiny.js${q}`),
+  menu: (q = "") => import(`./pages/menu.js${q}`),
+  freeGenre: (q = "") => import(`./pages/freeGenre.js${q}`),
+  rich: (q = "") => import(`./pages/rich.js${q}`),
+  newyear: (q = "") => import(`./pages/newyear.js${q}`),
+  consult: (q = "") => import(`./pages/consult.js${q}`),
+};
+const _modCache = {};
+let _modFail = 0;
+function loadMod(mod) {
+  // 한 번 실패한 파일은 브라우저가 실패를 기억해서, 다시 받을 땐 주소 끝에 ?r=… 를 붙여 새로 받아요
+  if (!_modCache[mod]) _modCache[mod] = PAGE_MODS[mod](_modFail ? `?r=${Date.now()}` : "").catch((e) => { delete _modCache[mod]; _modFail += 1; throw e; });
+  return _modCache[mod];
+}
+/* 바로 쓸 수 있는 화면 묶음 함수 — 모듈을 받은 뒤 그 안의 화면을 채워 넣음 */
+function lazyPage(mod, name) {
+  return (...args) => {
+    const box = el("div", { class: "lazy-pg" });
+    const fill = (m) => {
+      let n; try { n = m[name](...args); } catch (e) { reportError(e, "render:" + name); throw e; }
+      if (n && n.nodeType) { box.replaceChildren(n); afterLazy(box); }
+    };
+    if (_modCache[mod] && _modCache[mod].done) { fill(_modCache[mod].done); return box; }
+    const wait = setTimeout(() => { if (!box.firstChild) box.append(lazyWait()); }, 160);
+    loadMod(mod).then((m) => { _modCache[mod].done = m; clearTimeout(wait); fill(m); }).catch(() => {
+      clearTimeout(wait);
+      box.replaceChildren(offlineBox(() => { const nb = lazyPage(mod, name)(...args); box.replaceWith(nb); }));
+    });
+    return box;
+  };
+}
+function lazyWait() {
+  return el("div", { class: "wrap lazy-wait", role: "status" }, [el("span", { class: "lazy-dot", "aria-hidden": "true" }), el("span", { text: "화면을 불러오는 중…" })]);
+}
+function offlineBox(retry) {
+  return el("div", { class: "wrap center offline-box", role: "alert" }, [
+    el("p", { class: "offline-cat", "aria-hidden": "true", text: "🐾" }),
+    el("h1", { class: "serif", text: "인터넷 연결을 확인해 주세요" }),
+    el("p", { class: "muted", text: "화면을 불러오지 못했어요. 와이파이나 데이터가 켜져 있는지 확인한 뒤 다시 눌러 주세요." }),
+    el("button", { type: "button", class: "btn btn-primary", onclick: () => (navigator.onLine === false ? _toast("아직 인터넷이 끊겨 있어요.") : retry()) }, [el("span", { text: "다시 불러오기" })]),
+  ]);
+}
+const renderSajuLoading = lazyPage("sajuResult", "renderSajuLoading");
+const renderSajuResult = lazyPage("sajuResult", "renderSajuResult");
+const renderTarotQuestion = lazyPage("tarotQuestion", "renderTarotQuestion");
+const renderTarotSpread = lazyPage("tarotQuestion", "renderTarotSpread");
+const renderTarotSelect = lazyPage("tarotQuestion", "renderTarotSelect");
+const renderTarotResult = lazyPage("tarotQuestion", "renderTarotResult");
+const renderCompatInput = lazyPage("compatPlus", "renderCompatInput");
+const renderCompatResult = lazyPage("compatResult", "renderCompatResult");
+const renderZiweiResult = lazyPage("reports2", "renderZiweiResult");
+const renderOracle = lazyPage("tarotQuestion", "renderOracle");
+const renderPeople = lazyPage("people", "renderPeople");
+const renderRanks = lazyPage("people", "renderRanks");
+const renderGuiinResult = lazyPage("sinsal2", "renderGuiinResult");
+const renderStore = lazyPage("store", "renderStore");
+const renderAdminUsers = lazyPage("store", "renderAdminUsers");
+const renderFortuneHub = lazyPage("fortuneHub", "renderFortuneHub");
+const renderTopicReading = lazyPage("fortuneHub", "renderTopicReading");
+const renderTojeong = lazyPage("tojeong", "renderTojeong");
+const renderInvite = lazyPage("profile", "renderInvite");
+const renderAddFriend = lazyPage("profile", "renderAddFriend");
+const renderZodiac = lazyPage("fun", "renderZodiac");
+const renderStar = lazyPage("fun", "renderStar");
+const renderBiorhythm = lazyPage("fun", "renderBiorhythm");
+const renderCharm = lazyPage("fun", "renderCharm");
+const renderLuckyCard = lazyPage("fun", "renderLuckyCard");
+const renderPull = lazyPage("fun", "renderPull");
+const renderPullPair = lazyPage("fun", "renderPullPair");
+const renderInyeon = lazyPage("special", "renderInyeon");
+const renderExplore = lazyPage("explore", "renderExplore");
+const renderThemeReading = lazyPage("explore", "renderThemeReading");
+const renderDream = lazyPage("fun", "renderDream");
+const renderCalendar = lazyPage("fortuneHub", "renderCalendar");
+const renderGwansang = lazyPage("more", "renderGwansang");
+const renderSaved = lazyPage("profile", "renderSaved");
+const renderResultById = lazyPage("profile", "renderResultById");
+const renderAbout = lazyPage("about", "renderAbout");
+const renderPrivacy = lazyPage("about", "renderPrivacy");
+const renderTerms = lazyPage("about", "renderTerms");
+const renderNotFound = lazyPage("about", "renderNotFound");
+const renderReviews = lazyPage("about", "renderReviews");
+const renderInquiry = lazyPage("about", "renderInquiry");
+const renderProfile = lazyPage("profile", "renderProfile");
+const renderWonguk = lazyPage("wonguk", "renderWonguk");
+const renderStudy = lazyPage("study", "renderStudy");
+const renderDday = lazyPage("destiny", "renderDday");
+const renderPastLife = lazyPage("destiny", "renderPastLife");
+const renderMenu = lazyPage("menu", "renderMenu");
+const renderPremium = lazyPage("special", "renderPremium");
+const renderFreeItem = lazyPage("freeGenre", "renderFreeItem");
+const renderRich = lazyPage("rich", "renderRich");
+const renderBizJob = lazyPage("rich", "renderBizJob");
+const renderMoneyTime = lazyPage("rich", "renderMoneyTime");
+const renderSal = lazyPage("sinsal2", "renderSal");
+const renderLuck12 = lazyPage("reports2", "renderLuck12");
+const renderLove10 = lazyPage("reports2", "renderLove10");
+const renderBlueprint = lazyPage("reports2", "renderBlueprint");
+const renderSpouseLuck = lazyPage("reports2", "renderSpouseLuck");
+const renderStory = lazyPage("reports2", "renderStory");
+const renderDohwa = lazyPage("special", "renderDohwa");
+const renderGwimun = lazyPage("special", "renderGwimun");
+const renderLoveCount = lazyPage("special", "renderLoveCount");
+const renderNoMarry = lazyPage("special", "renderNoMarry");
+const renderChildren = lazyPage("special", "renderChildren");
+const renderManual = lazyPage("special", "renderManual");
+const renderTimeline = lazyPage("special", "renderTimeline");
+const renderCompleteMe = lazyPage("special", "renderCompleteMe");
+const renderFate3 = lazyPage("special", "renderFate3");
+const renderIdolCompat = lazyPage("special", "renderIdolCompat");
+const renderSoYukim = lazyPage("special", "renderSoYukim");
+const renderAstroDice = lazyPage("special", "renderAstroDice");
+const renderDiary = lazyPage("special", "renderDiary");
+const renderHwagae = lazyPage("special", "renderHwagae");
+const renderYeokma = lazyPage("special", "renderYeokma");
+const renderReunionDeep = lazyPage("special", "renderReunionDeep");
+const renderLoveFunItem = lazyPage("special", "renderLoveFunItem");
+const renderMonthlyReport = lazyPage("special", "renderMonthlyReport");
+const renderPalm = lazyPage("more", "renderPalm");
+const renderNameReading = lazyPage("more", "renderNameReading");
+const renderSajuMbti = lazyPage("more", "renderSajuMbti");
+const renderStudyLuck = lazyPage("more", "renderStudyLuck");
+const renderNaming = lazyPage("more", "renderNaming");
+const renderIching = lazyPage("fun", "renderIching");
+const renderGaeun = lazyPage("fun", "renderGaeun");
+const renderLuckyNumber = lazyPage("fun", "renderLuckyNumber");
+const renderSajuToon = lazyPage("fun", "renderSajuToon");
+const renderClassic = lazyPage("fun", "renderClassic");
+const renderHealthSaju = lazyPage("fun", "renderHealthSaju");
+const renderNewYear = lazyPage("newyear", "renderNewYear");
+const renderWeekTarot = lazyPage("newyear", "renderWeekTarot");
+const renderTarotDict = lazyPage("newyear", "renderTarotDict");
+const renderIlju = lazyPage("newyear", "renderIlju");
+const renderFamily = lazyPage("newyear", "renderFamily");
+const renderPet = lazyPage("newyear", "renderPet");
+const renderTarotLog = lazyPage("newyear", "renderTarotLog");
+const renderLoveBook = lazyPage("newyear", "renderLoveBook");
+const renderConsult = lazyPage("consult", "renderConsult");
+const renderConsultThread = lazyPage("consult", "renderConsultThread");
+const renderAIConsult = lazyPage("consult", "renderAIConsult");
+const renderLifespan = lazyPage("tojeong", "renderLifespan");
+const renderTojeongPlus = lazyPage("tojeong", "renderTojeongPlus");
+const renderTojeongCompat = lazyPage("tojeong", "renderTojeongCompat");
+const renderTojeongTheme = lazyPage("tojeong", "renderTojeongTheme");
+const renderCompatPlus = lazyPage("compatPlus", "renderCompatPlus");
 /* ===== (합침) router.js ===== */
 /* 해시 기반 라우터.
    GitHub Pages 정적 배포에서 새로고침 404가 나지 않도록 해시 라우팅을 사용한다.
@@ -150,6 +280,7 @@ const NAV = [
   { path: "/saved", label: "보관함" },
   { path: "/about", label: "이용 안내" },
   { path: "/privacy", label: "개인정보" },
+  { path: "/terms", label: "약관" },
 ];
 
 function buildShell() {
@@ -260,7 +391,7 @@ const DOWNLOADABLE = [
   [/^\/compat\/result/, "해묘-궁합"], [/^\/compat-plus/, "해묘-궁합특집"], [/^\/guiin\/result/, "해묘-귀인"], [/^\/result\//, "해묘-저장결과"],
   [/^\/fortune\/.+/, "해묘-운세"], [/^\/pull\/pair/, "해묘-끌림궁합"], [/^\/pull$/, "해묘-내매력사주"], [/^\/theme\//, "해묘-테마운세"],
   [/^\/inyeon/, "해묘-나의인연"], [/^\/dday/, "해묘-인연디데이"], [/^\/pastlife/, "해묘-전생"], [/^\/iching/, "해묘-주역점"], [/^\/menu/, "해묘-전체메뉴"], [/^\/special/, "해묘-프리미엄"], [/^\/(dohwa|hwagae|yeokma|reunion-deep|gwimun|love-count|no-marry|children|manual|timeline|complete-me|fate3|rich|bizjob|moneytime|idol-compat)/, "해묘-프리미엄"], [/^\/sal\//, "해묘-신살체크"], [/^\/free/, "해묘-무료운세"], [/^\/so-yukim/, "해묘-소육임"], [/^\/astro-dice/, "해묘-점성술다이스"], [/^\/diary/, "해묘-운세일기장"], [/^\/palm/, "해묘-손금"], [/^\/study-luck/, "해묘-공부운"], [/^\/naming/, "해묘-작명"], [/^\/name/, "해묘-이름풀이"], [/^\/saju-mbti/, "해묘-사주MBTI"], [/^\/(gaeun|bujeok)/, "해묘-풍수개운"], [/^\/luckynumber/, "해묘-행운번호"], [/^\/sajutoon/, "해묘-사주툰"], [/^\/classic/, "해묘-명심보감"], [/^\/health-saju/, "해묘-건강운"], [/^\/tojeong-plus/, "해묘-토정월별일별"], [/^\/tojeong-compat/, "해묘-토정궁합"], [/^\/tojeong-theme/, "해묘-토정테마"], [/^\/tojeong/, "해묘-토정비결"], [/^\/charm/, "해묘-매력지수"],
-  [/^\/love-fun\//, "해묘-연애사주"], [/^\/monthly/, "해묘-이달의흐름"],
+  [/^\/love-fun\//, "해묘-연애사주"], [/^\/love-book/, "해묘-연애비록"], [/^\/monthly/, "해묘-이달의흐름"],
   [/^\/zodiac/, "해묘-띠운세"], [/^\/star/, "해묘-별자리"], [/^\/biorhythm/, "해묘-바이오리듬"],
   [/^\/luckycard/, "해묘-행운카드"], [/^\/gwansang/, "해묘-관상"], [/^\/dream/, "해묘-꿈해몽"],
   [/^\/oracle/, "해묘-물어보기"], [/^\/calendar/, "해묘-운세캘린더"], [/^\/manse/, "해묘-만세력"], [/^\/wonguk/, "해묘-사주원국"],
@@ -279,7 +410,7 @@ function trackNav(path) {
 function parentOf(path) {
   if (path.startsWith("/fortune/") || ["/tarot", "/oracle", "/iching", "/so-yukim", "/astro-dice", "/dream", "/tojeong", "/calendar"].some((x) => path.startsWith(x))) return "/fortune";
   if (["/compat", "/guiin", "/inyeon", "/invite", "/addfriend"].some((x) => path.startsWith(x))) return "/people";
-  if (["/store", "/saved", "/about", "/privacy", "/reviews", "/inquiry"].some((x) => path.startsWith(x))) return "/profile";
+  if (["/store", "/saved", "/about", "/privacy", "/terms", "/reviews", "/inquiry"].some((x) => path.startsWith(x))) return "/profile";
   return "/";
 }
 function prevEntry() { return navHist.length >= 2 ? navHist[navHist.length - 2] : null; }
@@ -326,11 +457,23 @@ function mount(node, opts = {}) {
   }
   highlightNav();
   trackNav(currentPath());
+  try { statRoute(currentPath()); } catch { /* ignore */ }
+  if (node.classList && node.classList.contains("lazy-pg") && !node.firstChild) { refreshBack(); updateToTop(); return; } // 화면 파일 받는 중 — 채워지면 afterLazy가 마무리
   { const h1 = node.querySelector("h1"); const cur = navHist[navHist.length - 1]; if (cur && !NAV_NAME[cur.path] && h1) cur.title = h1.textContent.trim().replace(/\s+/g, " ").slice(0, 12); }
   refreshBack();
   // 포커스 관리(접근성): 새 화면 진입 시 제목으로 포커스
   const h = node.querySelector("h1");
   if (h && !opts.noFocus) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+  updateToTop();
+}
+
+/* 늦게 채워진 화면 마무리 — 제목 기억 · 포커스 · 맨 위로 버튼 */
+function afterLazy(box) {
+  if (!box.isConnected) return;
+  const h1 = box.querySelector("h1"); const cur = navHist[navHist.length - 1];
+  if (cur && !NAV_NAME[cur.path] && h1) cur.title = h1.textContent.trim().replace(/\s+/g, " ").slice(0, 12);
+  refreshBack();
+  if (h1) { h1.setAttribute("tabindex", "-1"); h1.focus({ preventScroll: true }); }
   updateToTop();
 }
 
@@ -443,6 +586,17 @@ function registerRoutes() {
   route("/health-saju", () => mount(renderHealthSaju({ navigate })));
   route("/study/:id", ({ params }) => mount(renderStudy({ navigate, id: params.id })));
   route("/calendar", () => mount(renderCalendar({ navigate })));
+  route("/newyear", () => mount(renderNewYear({ navigate })));
+  route("/week-tarot", () => mount(renderWeekTarot({ navigate })));
+  route("/tarot-dict", () => mount(renderTarotDict({ navigate })));
+  route("/ilju", () => mount(renderIlju({ navigate })));
+  route("/family-saju", () => mount(renderFamily({ navigate })));
+  route("/pet", () => mount(renderPet({ navigate })));
+  route("/love-book", () => mount(renderLoveBook({ navigate })));
+  route("/consult", () => mount(renderConsult({ navigate })));
+  route("/consult/:id", ({ params }) => mount(renderConsultThread({ navigate, id: params.id })));
+  route("/ai-consult", () => mount(renderAIConsult({ navigate })));
+  route("/tarot-log", () => mount(renderTarotLog({ navigate })));
   route("/fortune", () => mount(renderFortuneHub({ navigate })));
   route("/fortune/:method/:id", ({ params }) => mount(renderTopicReading({ navigate, method: params.method, id: params.id })));
   route("/fortune/:id", ({ params }) => mount(renderTopicReading({ navigate, method: "saju", id: params.id })));
@@ -463,6 +617,7 @@ function registerRoutes() {
   route("/saved", () => mount(renderSaved({ navigate })));
   route("/about", () => mount(renderAbout({ navigate })));
   route("/privacy", () => mount(renderPrivacy({ navigate })));
+  route("/terms", () => mount(renderTerms({ navigate })));
   route("/profile", () => mount(renderProfile({ navigate })));
   route("/reviews", () => mount(renderReviews({ navigate })));
   route("/inquiry", () => mount(renderInquiry({ navigate })));
@@ -476,7 +631,7 @@ function registerRoutes() {
    ========================================================= */
 const GUEST_OK = [
   /^\/$/, /^\/free$/, /^\/free\/[^/]+$/, /^\/tarot(\/.*)?$/, /^\/oracle$/, /^\/dream$/, /^\/iching$/, /^\/palm$/,
-  /^\/explore$/, /^\/theme\/[^/]+$/, /^\/menu$/, /^\/about$/, /^\/privacy$/, /^\/profile$/, /^\/reviews$/, /^\/inquiry$/,
+  /^\/explore$/, /^\/theme\/[^/]+$/, /^\/menu$/, /^\/about$/, /^\/privacy$/, /^\/terms$/, /^\/profile$/, /^\/reviews$/, /^\/inquiry$/,
   /^\/store$/, /^\/premium$/, /^\/special$/, /^\/fortune$/, /^\/classic$/, /^\/luckycard$/, /^\/astro-dice$/, /^\/so-yukim$/,
 ];
 export function isMember() {
@@ -670,6 +825,9 @@ function init() {
   adminViewBar();
   setupToTop();
   registerRoutes();
+  try { watchErrors(); statVisit(); } catch { /* ignore */ }   // 📊 방문 통계 · 🚨 오류 자동 신고
+  // 📴 인터넷이 끊겨도 한 번 열어 본 화면은 열리게 (알림용 서비스 워커와 같은 파일)
+  try { if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) setTimeout(() => navigator.serviceWorker.register("./firebase-messaging-sw.js", { scope: "./" }).catch(() => {}), 2500); } catch { /* ignore */ }
   try { grantDailyLogin(); } catch { /* ignore */ }   // 로그인 사용자 매일 1코인
   try { grantMonthly().forEach((m, i) => setTimeout(() => _toast(`${m.emoji} ${m.name} — 이달의 선물, 코인 +${m.coins}`, 3200), 800 + i * 3400)); } catch { /* ignore */ }
   window.addEventListener("profilechange", () => { try { grantDailyLogin(); } catch { /* ignore */ } });
