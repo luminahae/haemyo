@@ -171,6 +171,7 @@ const renderLoveBook = lazyPage("newyear", "renderLoveBook");
 const renderConsult = lazyPage("consult", "renderConsult");
 const renderConsultThread = lazyPage("consult", "renderConsultThread");
 const renderAIConsult = lazyPage("consult", "renderAIConsult");
+const renderExpertDesk = lazyPage("consult", "renderExpertDesk");
 const renderLifespan = lazyPage("tojeong", "renderLifespan");
 const renderTojeongPlus = lazyPage("tojeong", "renderTojeongPlus");
 const renderTojeongCompat = lazyPage("tojeong", "renderTojeongCompat");
@@ -609,6 +610,7 @@ function registerRoutes() {
   route("/consult", () => mount(renderConsult({ navigate })));
   route("/consult/:id", ({ params }) => mount(renderConsultThread({ navigate, id: params.id })));
   route("/ai-consult", () => mount(renderAIConsult({ navigate })));
+  route("/consult-desk", () => mount(renderExpertDesk({ navigate })));
   route("/tarot-log", () => mount(renderTarotLog({ navigate })));
   route("/fortune", () => mount(renderFortuneHub({ navigate })));
   route("/fortune/:method/:id", ({ params }) => mount(renderTopicReading({ navigate, method: params.method, id: params.id })));

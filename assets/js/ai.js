@@ -62,13 +62,18 @@ export async function ask(chat, text, onChunk) {
   return out.trim();
 }
 
-/** 오류를 사람 말로 */
+/** 오류를 사람 말로 — 주의: 오류 글에 'streamGenerateContent' 주소가 들어 있어서 'rate' 같은 짧은 낱말로 찾으면 안 돼요 */
 export function aiErrorText(e) {
   const m = String((e && (e.message || e.code)) || e || "");
-  if (/app-check|appCheck|attestation|recaptcha/i.test(m)) return "앱 확인(App Check) 설정이 아직이에요. 관리자에게 알려 주세요.";
-  if (/quota|429|RESOURCE_EXHAUSTED|rate/i.test(m)) return "오늘 AI 상담이 너무 많이 몰렸어요. 잠시 뒤에 다시 물어봐 주세요.";
-  if (/api-not-enabled|not been used|disabled|PERMISSION_DENIED|403/i.test(m)) return "AI 기능이 아직 켜지지 않았어요. 관리자에게 알려 주세요.";
-  if (/SAFETY|blocked/i.test(m)) return "이 질문엔 답하기 어려워요. 조금 다르게 물어봐 주세요.";
-  if (/network|Failed to fetch|offline/i.test(m)) return "인터넷 연결을 확인해 주세요.";
+  if (/app-check|appCheck|attestation|recaptcha|fetch-status-error|throttled/i.test(m)) return "앱 확인(App Check)이 이 주소를 아직 허용하지 않았어요. (App Check 저장 · reCAPTCHA 도메인 확인 필요)";
+  if (/api-not-enabled|has not been used|is disabled|SERVICE_DISABLED|PERMISSION_DENIED|\b403\b/i.test(m)) return "AI 기능(Firebase AI Logic)이 아직 켜지지 않았어요. 관리자에게 알려 주세요.";
+  if (/\b404\b|NOT_FOUND|is not found|not supported for/i.test(m)) return "AI 모델 이름이 맞지 않아요. 관리자에게 알려 주세요.";
+  if (/\b429\b|RESOURCE_EXHAUSTED|quota|rate[ -]?limit/i.test(m)) return "AI 무료 사용량이 잠깐 꽉 찼어요. 1분쯤 뒤에 다시 물어봐 주세요.";
+  if (/SAFETY|blocked|PROHIBITED/i.test(m)) return "이 질문엔 답하기 어려워요. 조금 다르게 물어봐 주세요.";
+  if (/network|Failed to fetch|offline|ERR_/i.test(m)) return "인터넷 연결을 확인해 주세요.";
   return "답을 받지 못했어요. 잠시 뒤 다시 해 주세요.";
+}
+/** 관리자에게만 보여 줄 원래 오류 (짧게) */
+export function aiErrorRaw(e) {
+  return String((e && (e.code ? e.code + " · " : "") + (e.message || "")) || e || "").replace(/https?:\/\/\S+/g, "").slice(0, 180);
 }

@@ -329,6 +329,7 @@ export async function deleteAccount(password) {
       }
       await f.F.deleteDoc(f.F.doc(f.db, "users", user.uid));
     } catch { /* Firestore가 없거나 오프라인이어도 계정 삭제는 진행 */ }
+    try { const qs = await f.F.getDocs(f.F.collection(f.db, "users", user.uid, "aichats")); for (const d of qs.docs) await f.F.deleteDoc(d.ref); } catch { /* AI 대화 기록도 같이 지움 (보관하지 않음) */ }
     try { await f.F.deleteDoc(f.F.doc(f.db, "push", user.uid)); } catch { /* 알림 설정도 같이 지움 */ }
     try { await f.A.deleteUser(user); }
     catch (e) {
@@ -1007,4 +1008,84 @@ export async function getExpertRatings() {
 export async function adminDeleteRating(cid) {
   const f = await fb().catch(() => null); if (!f) return { error: "먼저 로그인해 주세요." };
   try { await f.F.deleteDoc(f.F.doc(f.db, "expertRatings", String(cid))); return { ok: true }; } catch (e) { return { error: permMsg(e, "지우기") }; }
+}
+
+/* ---- 🧑‍💼 상담사 계정 — 관리자가 회원 계정을 상담사(expertId)와 연결 ----
+   · expertApply/{uid}    → 신청 { uid, email, name, expertId, msg, status:"wait"|"no", at } — 본인이 보내기 · 관리자가 보고 처리
+   · expertAccounts/{uid} → 연결 { uid, email, name, expertId, at } — 관리자만 쓰기 · 본인/관리자 읽기
+   연결된 계정은 자기 상담사(expertId)로 들어온 상담만 읽고 답할 수 있어요 (Firestore 규칙으로도 막음) */
+export async function myExpertLink() {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser; if (!u) return null;
+  try { const s = await f.F.getDoc(f.F.doc(f.db, "expertAccounts", u.uid)); return s.exists() ? s.data() : null; } catch { return null; }
+}
+export async function myExpertApply() {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser; if (!u) return null;
+  try { const s = await f.F.getDoc(f.F.doc(f.db, "expertApply", u.uid)); return s.exists() ? s.data() : null; } catch { return null; }
+}
+export async function applyExpert({ expertId, name, msg }) {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser;
+  if (!u || u.isAnonymous) return { error: "구글 · 이메일로 로그인한 계정만 신청할 수 있어요." };
+  const doc = { uid: u.uid, email: String(u.email || "").slice(0, 80), name: String(name || "").trim().slice(0, 20), expertId: String(expertId || "").slice(0, 20), msg: String(msg || "").trim().slice(0, 500), status: "wait", at: Date.now() };
+  try { await f.F.setDoc(f.F.doc(f.db, "expertApply", u.uid), doc); return { ok: true, apply: doc }; }
+  catch (e) { return { error: permMsg(e, "상담사 신청") }; }
+}
+export async function cancelExpertApply() {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser; if (!u) return { error: "먼저 로그인해 주세요." };
+  try { await f.F.deleteDoc(f.F.doc(f.db, "expertApply", u.uid)); return { ok: true }; } catch (e) { return { error: permMsg(e, "신청 취소") }; }
+}
+/** 상담사: 내 상담사로 들어온 상담 */
+export async function expertConsults(expertId) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  try { const qs = await f.F.getDocs(f.F.query(f.F.collection(f.db, "consults"), f.F.where("expertId", "==", String(expertId)))); return { list: qs.docs.map((d) => d.data()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)) }; }
+  catch (e) { return { error: permMsg(e, "상담 불러오기") }; }
+}
+/** 관리자 */
+export async function adminExpertAccounts() {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  try {
+    const [a, l] = await Promise.all([f.F.getDocs(f.F.collection(f.db, "expertApply")), f.F.getDocs(f.F.collection(f.db, "expertAccounts"))]);
+    const by = (x) => x.docs.map((d) => ({ uid: d.id, ...d.data() })).sort((p, q) => (q.at || 0) - (p.at || 0));
+    return { applies: by(a), links: by(l) };
+  } catch (e) { return { error: permMsg(e, "상담사 계정 불러오기") }; }
+}
+/** 이메일로 회원 찾기 (users 문서의 email) */
+export async function adminFindUserByEmail(email) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  try {
+    const qs = await f.F.getDocs(f.F.query(f.F.collection(f.db, "users"), f.F.where("email", "==", String(email).trim())));
+    const d = qs.docs[0]; if (!d) return { error: "그 이메일로 가입한 회원이 없어요. 상대가 먼저 한 번 로그인해야 해요." };
+    const v = d.data() || {}; return { user: { uid: d.id, email: v.email || "", name: v.name || "" } };
+  } catch (e) { return { error: permMsg(e, "회원 찾기") }; }
+}
+export async function adminLinkExpert({ uid, email, name, expertId }) {
+  const f = await fb().catch(() => null); if (!f || !f.auth.currentUser) return { error: "먼저 로그인해 주세요." };
+  try {
+    await f.F.setDoc(f.F.doc(f.db, "expertAccounts", String(uid)), { uid: String(uid), email: String(email || "").slice(0, 80), name: String(name || "").slice(0, 20), expertId: String(expertId).slice(0, 20), at: Date.now() });
+    try { await f.F.deleteDoc(f.F.doc(f.db, "expertApply", String(uid))); } catch { /* 신청 없이 바로 연결했으면 무시 */ }
+    return { ok: true };
+  } catch (e) { return { error: permMsg(e, "상담사 연결") }; }
+}
+export async function adminUnlinkExpert(uid) {
+  const f = await fb().catch(() => null); if (!f) return { error: "먼저 로그인해 주세요." };
+  try { await f.F.deleteDoc(f.F.doc(f.db, "expertAccounts", String(uid))); return { ok: true }; } catch (e) { return { error: permMsg(e, "연결 해제") }; }
+}
+export async function adminRejectExpert(uid) {
+  const f = await fb().catch(() => null); if (!f) return { error: "먼저 로그인해 주세요." };
+  try { await f.F.updateDoc(f.F.doc(f.db, "expertApply", String(uid)), { status: "no" }); return { ok: true }; } catch (e) { return { error: permMsg(e, "거절") }; }
+}
+
+/* ---- 💬 해묘냥 AI 대화 기록 — users/{uid}/aichats/{대화 id} (본인만 읽고 쓰기 · 관리자도 못 봄) ----
+   { id, mode, pid, pname, title, msgs:[{ role, text, raw?, cards? }], createdAt, updatedAt } */
+export async function aiChatsList() {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser; if (!u) return null;
+  try { const qs = await f.F.getDocs(f.F.collection(f.db, "users", u.uid, "aichats")); return qs.docs.map((d) => { try { return JSON.parse(d.data().payload); } catch { return null; } }).filter(Boolean); }
+  catch { return null; }
+}
+export async function aiChatSave(s) {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser; if (!u || !s || !s.id) return;
+  try { await f.F.setDoc(f.F.doc(f.db, "users", u.uid, "aichats", String(s.id)), { payload: JSON.stringify(s).slice(0, 200000), updatedAt: s.updatedAt || Date.now() }); } catch { /* 규칙을 아직 안 바꿨으면 이 기기에만 */ }
+}
+export async function aiChatDelete(id) {
+  const f = await fb().catch(() => null); const u = f && f.auth.currentUser; if (!u) return;
+  try { await f.F.deleteDoc(f.F.doc(f.db, "users", u.uid, "aichats", String(id))); } catch { /* ignore */ }
 }
